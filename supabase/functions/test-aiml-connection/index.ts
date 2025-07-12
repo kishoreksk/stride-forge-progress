@@ -13,46 +13,45 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Testing AIML API connectivity...');
+    console.log('Testing Gemini API connectivity...');
     
-    // Test with your AIML API key
-    const aimlApiKey = Deno.env.get('AIML_API_KEY');
-    console.log('API Key available:', !!aimlApiKey);
+    // Test with your Gemini API key
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    console.log('API Key available:', !!geminiApiKey);
     
-    if (!aimlApiKey) {
-      throw new Error('AIML API key not configured');
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
     }
 
     // Simple test request
-    const testResponse = await fetch('https://api.aimlapi.com/v1/chat/completions', {
+    const testResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${aimlApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: 'Say "API connection successful" in JSON format: {"status": "success", "message": "API connection successful"}'
-          }
-        ],
-        max_tokens: 100,
-        temperature: 0.1
+        contents: [{
+          parts: [{
+            text: 'Say "API connection successful" in JSON format: {"status": "success", "message": "API connection successful"}'
+          }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 100,
+          temperature: 0.1
+        }
       }),
     });
 
-    console.log('AIML API Response Status:', testResponse.status);
+    console.log('Gemini API Response Status:', testResponse.status);
     
     if (!testResponse.ok) {
       const errorText = await testResponse.text();
-      console.error('AIML API Error:', errorText);
+      console.error('Gemini API Error:', errorText);
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: `AIML API error: ${testResponse.status} - ${errorText}`,
-          apiKeyPresent: !!aimlApiKey
+          error: `Gemini API error: ${testResponse.status} - ${errorText}`,
+          apiKeyPresent: !!geminiApiKey
         }),
         {
           status: 200, // Return 200 so we can see the error details
@@ -61,15 +60,15 @@ serve(async (req) => {
       );
     }
 
-    const aimlData = await testResponse.json();
-    console.log('AIML Response received');
+    const geminiData = await testResponse.json();
+    console.log('Gemini Response received');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'AIML API connection successful',
-        response: aimlData.choices[0].message.content,
-        apiKeyPresent: !!aimlApiKey
+        message: 'Gemini API connection successful',
+        response: geminiData.candidates[0].content.parts[0].text,
+        apiKeyPresent: !!geminiApiKey
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -82,7 +81,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: false, 
         error: error.message,
-        apiKeyPresent: !!Deno.env.get('AIML_API_KEY')
+        apiKeyPresent: !!Deno.env.get('GEMINI_API_KEY')
       }),
       {
         status: 200, // Return 200 so we can see the error details

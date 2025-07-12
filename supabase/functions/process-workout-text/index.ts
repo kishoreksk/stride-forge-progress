@@ -29,29 +29,26 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use OpenAI API to process the workout text
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openaiApiKey) {
-      throw new Error('OpenAI API key not configured');
+    // Use Gemini API to process the workout text
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
     }
 
-    console.log('Sending workout text to OpenAI for analysis...');
-    console.log('OpenAI API Key exists:', !!openaiApiKey);
+    console.log('Sending workout text to Gemini for analysis...');
+    console.log('Gemini API Key exists:', !!geminiApiKey);
     
-    let openaiResponse;
+    let geminiResponse;
     try {
-      openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a fitness expert that analyzes workout descriptions. Extract workout information and return it as a JSON object with this structure:
+          contents: [{
+            parts: [{
+              text: `You are a fitness expert that analyzes workout descriptions. Extract workout information and return it as a JSON object with this structure:
               {
                 "workout_session": {
                   "category": "push|pull|legs|abs|cardio|treadmill",
@@ -79,38 +76,38 @@ serve(async (req) => {
               - Use null for missing values
               - Be generous in parsing different formats (e.g., "3x12", "3 sets of 12", etc.)
               - Estimate duration if not explicitly stated
-              - Return ONLY valid JSON, no other text`
-            },
-            {
-              role: 'user',
-              content: `Parse this workout description: "${workoutText}"${category && category !== 'auto' ? ` Category hint: ${category}` : ''}`
-            }
-          ],
-          max_tokens: 2000,
-          temperature: 0.1
+              - Return ONLY valid JSON, no other text
+              
+              Parse this workout description: "${workoutText}"${category && category !== 'auto' ? ` Category hint: ${category}` : ''}`
+            }]
+          }],
+          generationConfig: {
+            maxOutputTokens: 2000,
+            temperature: 0.1
+          }
         }),
       });
     } catch (fetchError) {
-      console.error('Network error calling OpenAI API:', fetchError);
+      console.error('Network error calling Gemini API:', fetchError);
       throw new Error(`Network error: ${fetchError.message}`);
     }
 
-    console.log('OpenAI API response status:', openaiResponse.status);
-    console.log('OpenAI API response headers:', Object.fromEntries(openaiResponse.headers.entries()));
+    console.log('Gemini API response status:', geminiResponse.status);
+    console.log('Gemini API response headers:', Object.fromEntries(geminiResponse.headers.entries()));
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API error response:', errorText);
-      console.error('OpenAI API status:', openaiResponse.status, openaiResponse.statusText);
-      throw new Error(`OpenAI API error (${openaiResponse.status}): ${errorText}`);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error response:', errorText);
+      console.error('Gemini API status:', geminiResponse.status, geminiResponse.statusText);
+      throw new Error(`Gemini API error (${geminiResponse.status}): ${errorText}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    console.log('OpenAI response received, parsing...');
+    const geminiData = await geminiResponse.json();
+    console.log('Gemini response received, parsing...');
 
     let workoutData;
     try {
-      const extractedContent = openaiData.choices[0].message.content;
+      const extractedContent = geminiData.candidates[0].content.parts[0].text;
       console.log('Extracted content preview:', extractedContent.substring(0, 300) + '...');
       
       // Clean the content in case there's any extra text
@@ -119,8 +116,8 @@ serve(async (req) => {
       
       workoutData = JSON.parse(jsonContent);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response as JSON:', parseError);
-      console.error('Raw content:', openaiData.choices[0].message.content);
+      console.error('Failed to parse Gemini response as JSON:', parseError);
+      console.error('Raw content:', geminiData.candidates[0].content.parts[0].text);
       throw new Error('Failed to parse workout data from AI response');
     }
 

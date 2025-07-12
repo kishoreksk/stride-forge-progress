@@ -38,20 +38,20 @@ export const CreateWorkoutDialog = ({ onWorkoutCreated }: CreateWorkoutDialogPro
     try {
       console.log('Sending workout text to AI for processing...');
       
-      // First test the OpenAI connection
-      const { data: testData, error: testError } = await supabase.functions.invoke('test-openai-connection');
+      // First test the Gemini connection
+      const { data: testData, error: testError } = await supabase.functions.invoke('test-aiml-connection');
       
       if (testError) {
-        console.error('OpenAI connection test failed:', testError);
+        console.error('Gemini connection test failed:', testError);
         throw new Error(`Connection test failed: ${testError.message}`);
       }
 
       if (!testData?.success) {
-        console.error('OpenAI API test failed:', testData);
-        throw new Error(`OpenAI API test failed: ${testData?.error || 'Unknown error'}`);
+        console.error('Gemini API test failed:', testData);
+        throw new Error(`Gemini API test failed: ${testData?.error || 'Unknown error'}`);
       }
 
-      console.log('OpenAI connection test successful:', testData);
+      console.log('Gemini connection test successful:', testData);
 
       const { data: parseData, error: parseError } = await supabase.functions.invoke('process-workout-text', {
         body: {
