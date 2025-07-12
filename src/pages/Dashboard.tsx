@@ -15,7 +15,8 @@ import {
   LogOut, 
   Calendar, 
   TrendingUp, 
-  BarChart3
+  BarChart3,
+  Upload
 } from 'lucide-react';
 
 interface WorkoutSession {
@@ -37,6 +38,7 @@ const Dashboard = () => {
   const { toast } = useToast();
   const [recentWorkouts, setRecentWorkouts] = useState<WorkoutSession[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [workoutPlans, setWorkoutPlans] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalWorkouts: 0,
     thisWeekWorkouts: 0,
@@ -51,6 +53,7 @@ const Dashboard = () => {
   const fetchData = () => {
     fetchProfile();
     fetchRecentWorkouts();
+    fetchWorkoutPlans();
     fetchStats();
   };
 
@@ -98,6 +101,20 @@ const Dashboard = () => {
       console.error('Error fetching workouts:', error);
     } else {
       setRecentWorkouts(data || []);
+    }
+  };
+
+  const fetchWorkoutPlans = async () => {
+    const { data, error } = await supabase
+      .from('workout_plans')
+      .select('*')
+      .eq('user_id', user?.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching workout plans:', error);
+    } else {
+      setWorkoutPlans(data || []);
     }
   };
 
@@ -235,51 +252,89 @@ const Dashboard = () => {
           <WeeklyReportDialog onReportGenerated={fetchData} />
         </div>
 
-        {/* Recent Workouts */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Workouts</CardTitle>
-            <CardDescription>Your latest workout sessions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {recentWorkouts.length === 0 ? (
-              <div className="text-center py-8">
-                <Dumbbell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No workouts yet. Start your fitness journey!</p>
-                <AddWorkoutDialog onWorkoutAdded={fetchData}>
-                  <Button className="mt-4">
-                    <Dumbbell className="h-4 w-4 mr-2" />
-                    Add Your First Workout
-                  </Button>
-                </AddWorkoutDialog>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentWorkouts.map((workout) => (
-                  <div key={workout.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <Badge className={getCategoryColor(workout.category)}>
-                        {workout.category.toUpperCase()}
-                      </Badge>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Workout Plans */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Workout Plans</CardTitle>
+              <CardDescription>Your uploaded workout plans</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {workoutPlans.length === 0 ? (
+                <div className="text-center py-8">
+                  <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No workout plans uploaded yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {workoutPlans.map((plan) => (
+                    <div key={plan.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div>
-                        <p className="font-medium">{new Date(workout.date).toLocaleDateString()}</p>
+                        <p className="font-medium">{plan.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {workout.exercises.length} exercises
-                          {workout.duration_minutes && ` • ${workout.duration_minutes} min`}
+                          Uploaded {new Date(plan.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {plan.file_url && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={plan.file_url} target="_blank" rel="noopener noreferrer">
+                            View PDF
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Workouts */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Workouts</CardTitle>
+              <CardDescription>Your latest workout sessions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {recentWorkouts.length === 0 ? (
+                <div className="text-center py-8">
+                  <Dumbbell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No workouts yet. Start your fitness journey!</p>
+                  <AddWorkoutDialog onWorkoutAdded={fetchData}>
+                    <Button className="mt-4">
+                      <Dumbbell className="h-4 w-4 mr-2" />
+                      Add Your First Workout
+                    </Button>
+                  </AddWorkoutDialog>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentWorkouts.map((workout) => (
+                    <div key={workout.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <Badge className={getCategoryColor(workout.category)}>
+                          {workout.category.toUpperCase()}
+                        </Badge>
+                        <div>
+                          <p className="font-medium">{new Date(workout.date).toLocaleDateString()}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {workout.exercises.length} exercises
+                            {workout.duration_minutes && ` • ${workout.duration_minutes} min`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">
+                          {workout.exercises.reduce((total, ex) => total + (ex.sets || 0), 0)} sets
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">
-                        {workout.exercises.reduce((total, ex) => total + (ex.sets || 0), 0)} sets
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
