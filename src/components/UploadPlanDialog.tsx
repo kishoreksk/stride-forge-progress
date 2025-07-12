@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Upload, FileText, X, Calendar } from 'lucide-react';
+import { Upload, FileText, X, Calendar, Brain } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,8 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [planName, setPlanName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [useAiParsing, setUseAiParsing] = useState(true);
+  const [isParsing, setIsParsing] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -78,15 +80,49 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
 
       if (dbError) throw dbError;
 
+      let successMessage = "Workout plan uploaded successfully!";
+      let description = "You can now reference this plan when adding workouts manually.";
+
+      // If AI parsing is enabled, try to parse the PDF
+      if (useAiParsing) {
+        setIsParsing(true);
+        try {
+          const { data: parseData, error: parseError } = await supabase.functions.invoke('parse-workout-pdf', {
+            body: {
+              fileUrl: publicUrl,
+              planName: planName.trim(),
+              userId: user.id
+            }
+          });
+
+          if (parseError) throw parseError;
+
+          if (parseData?.success) {
+            successMessage = "Plan uploaded and parsed by AI!";
+            description = `Created ${parseData.workoutsCreated} workouts with ${parseData.exercisesCreated} exercises automatically.`;
+          }
+        } catch (parseError) {
+          console.error('AI parsing failed:', parseError);
+          toast({
+            variant: "destructive",
+            title: "AI parsing failed",
+            description: "Plan uploaded but AI couldn't parse exercises. You can add workouts manually.",
+          });
+        } finally {
+          setIsParsing(false);
+        }
+      }
+
       toast({
-        title: "Workout plan uploaded successfully!",
-        description: "You can now reference this plan when adding workouts manually.",
+        title: successMessage,
+        description: description,
       });
 
       // Reset form and close dialog
       setOpen(false);
       setFile(null);
       setPlanName('');
+      setUseAiParsing(true);
       onPlanUploaded();
     } catch (error: any) {
       toast({
@@ -118,7 +154,7 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
         <DialogHeader>
           <DialogTitle>Upload Workout Plan</DialogTitle>
           <DialogDescription>
-            Upload a PDF workout plan for reference. You can manually add workouts based on your plan.
+            Upload a PDF workout plan. With AI parsing enabled, exercises will be automatically extracted and added to your calendar.
           </DialogDescription>
         </DialogHeader>
 
@@ -176,15 +212,32 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
               )}
             </div>
 
+            <div className="flex items-center space-x-2 p-4 bg-muted/50 rounded-lg">
+              <Checkbox
+                id="aiParsing"
+                checked={useAiParsing}
+                onCheckedChange={(checked) => setUseAiParsing(checked as boolean)}
+              />
+              <div className="flex-1">
+                <Label htmlFor="aiParsing" className="flex items-center space-x-2 cursor-pointer">
+                  <Brain className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">AI-Powered Exercise Extraction</span>
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Automatically analyze the PDF and create workout sessions in your calendar
+                </p>
+              </div>
+            </div>
+
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button
                 onClick={handleUpload}
-                disabled={!file || !planName.trim() || isUploading}
+                disabled={!file || !planName.trim() || isUploading || isParsing}
               >
-                {isUploading ? "Uploading..." : "Upload Plan"}
+                {isParsing ? "AI Parsing..." : isUploading ? "Uploading..." : "Upload Plan"}
               </Button>
             </div>
           </div>
