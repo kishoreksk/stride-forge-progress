@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { AddWorkoutDialog } from '@/components/AddWorkoutDialog';
+import { UploadPlanDialog } from '@/components/UploadPlanDialog';
+import { ProgressPhotoDialog } from '@/components/ProgressPhotoDialog';
+import { WeeklyReportDialog } from '@/components/WeeklyReportDialog';
 import { 
   Dumbbell, 
-  Plus, 
   LogOut, 
   Calendar, 
   TrendingUp, 
-  Upload,
-  Camera,
   BarChart3
 } from 'lucide-react';
 
@@ -47,11 +48,15 @@ const Dashboard = () => {
     return <Navigate to="/auth" replace />;
   }
 
+  const fetchData = () => {
+    fetchProfile();
+    fetchRecentWorkouts();
+    fetchStats();
+  };
+
   useEffect(() => {
     if (user) {
-      fetchProfile();
-      fetchRecentWorkouts();
-      fetchStats();
+      fetchData();
     }
   }, [user]);
 
@@ -224,25 +229,10 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Button className="h-20 flex flex-col items-center justify-center space-y-2">
-            <Plus className="h-6 w-6" />
-            <span>Add Workout</span>
-          </Button>
-          
-          <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-            <Upload className="h-6 w-6" />
-            <span>Upload Plan</span>
-          </Button>
-          
-          <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-            <Camera className="h-6 w-6" />
-            <span>Progress Photo</span>
-          </Button>
-          
-          <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2">
-            <BarChart3 className="h-6 w-6" />
-            <span>Weekly Report</span>
-          </Button>
+          <AddWorkoutDialog onWorkoutAdded={fetchData} />
+          <UploadPlanDialog onPlanUploaded={fetchData} />
+          <ProgressPhotoDialog onPhotoUploaded={fetchData} />
+          <WeeklyReportDialog onReportGenerated={fetchData} />
         </div>
 
         {/* Recent Workouts */}
@@ -256,10 +246,12 @@ const Dashboard = () => {
               <div className="text-center py-8">
                 <Dumbbell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No workouts yet. Start your fitness journey!</p>
-                <Button className="mt-4">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Workout
-                </Button>
+                <AddWorkoutDialog onWorkoutAdded={fetchData}>
+                  <Button className="mt-4">
+                    <Dumbbell className="h-4 w-4 mr-2" />
+                    Add Your First Workout
+                  </Button>
+                </AddWorkoutDialog>
               </div>
             ) : (
               <div className="space-y-4">
