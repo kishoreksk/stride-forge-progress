@@ -14,7 +14,181 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exercises: {
+        Row: {
+          created_at: string
+          distance_km: number | null
+          exercise_name: string
+          exercise_type: Database["public"]["Enums"]["exercise_type"]
+          id: string
+          laps: number | null
+          notes: string | null
+          reps: number | null
+          sets: number | null
+          time_minutes: number | null
+          weight_kg: number | null
+          workout_session_id: string
+        }
+        Insert: {
+          created_at?: string
+          distance_km?: number | null
+          exercise_name: string
+          exercise_type?: Database["public"]["Enums"]["exercise_type"]
+          id?: string
+          laps?: number | null
+          notes?: string | null
+          reps?: number | null
+          sets?: number | null
+          time_minutes?: number | null
+          weight_kg?: number | null
+          workout_session_id: string
+        }
+        Update: {
+          created_at?: string
+          distance_km?: number | null
+          exercise_name?: string
+          exercise_type?: Database["public"]["Enums"]["exercise_type"]
+          id?: string
+          laps?: number | null
+          notes?: string | null
+          reps?: number | null
+          sets?: number | null
+          time_minutes?: number | null
+          weight_kg?: number | null
+          workout_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      progress_photos: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          photo_url: string
+          user_id: string
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photo_url: string
+          user_id: string
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photo_url?: string
+          user_id?: string
+          week_start_date?: string
+        }
+        Relationships: []
+      }
+      workout_plans: {
+        Row: {
+          created_at: string
+          file_url: string | null
+          id: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workout_sessions: {
+        Row: {
+          category: Database["public"]["Enums"]["workout_category"]
+          created_at: string
+          date: string
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+          workout_plan_id: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["workout_category"]
+          created_at?: string
+          date: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+          workout_plan_id?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["workout_category"]
+          created_at?: string
+          date?: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+          workout_plan_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sessions_workout_plan_id_fkey"
+            columns: ["workout_plan_id"]
+            isOneToOne: false
+            referencedRelation: "workout_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +197,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      exercise_type: "strength" | "cardio"
+      workout_category:
+        | "push"
+        | "pull"
+        | "legs"
+        | "abs"
+        | "cardio"
+        | "treadmill"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +331,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      exercise_type: ["strength", "cardio"],
+      workout_category: ["push", "pull", "legs", "abs", "cardio", "treadmill"],
+    },
   },
 } as const
