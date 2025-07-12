@@ -15,6 +15,8 @@ import {
   BarChart3,
   ArrowLeft
 } from 'lucide-react';
+import { UpdateExerciseDialog } from '@/components/UpdateExerciseDialog';
+import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO } from 'date-fns';
 
 interface WorkoutSession {
@@ -245,8 +247,9 @@ const WorkoutDashboard = () => {
                 </CardHeader>
                 <CardContent className="pt-0">
                   {dayWorkouts.length === 0 ? (
-                    <div className="text-center py-4">
+                    <div className="text-center py-4 space-y-2">
                       <p className="text-sm text-muted-foreground">Rest Day</p>
+                      <MarkAbsentDialog date={day} dayName={getDayName(day)} />
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -268,21 +271,29 @@ const WorkoutDashboard = () => {
                             {workout.exercises.map((exercise, index) => (
                               <div 
                                 key={exercise.id} 
-                                className="text-xs p-2 bg-muted rounded border"
+                                className="text-xs p-2 bg-muted rounded border space-y-2"
                               >
-                                <div className="font-medium text-foreground">
-                                  {exercise.exercise_name}
-                                </div>
-                                <div className="text-muted-foreground flex items-center space-x-2">
-                                  {exercise.sets && (
-                                    <span>{exercise.sets} sets</span>
-                                  )}
-                                  {exercise.reps && (
-                                    <span>• {exercise.reps} reps</span>
-                                  )}
-                                  {exercise.weight_kg && (
-                                    <span>• {exercise.weight_kg}kg</span>
-                                  )}
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <div className="font-medium text-foreground">
+                                      {exercise.exercise_name}
+                                    </div>
+                                    <div className="text-muted-foreground flex items-center space-x-2">
+                                      {exercise.sets && (
+                                        <span>{exercise.sets} sets</span>
+                                      )}
+                                      {exercise.reps && (
+                                        <span>• {exercise.reps} reps</span>
+                                      )}
+                                      {exercise.weight_kg && (
+                                        <span>• {exercise.weight_kg}kg</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <UpdateExerciseDialog 
+                                    exercise={exercise} 
+                                    onExerciseUpdated={fetchWeeklyWorkouts} 
+                                  />
                                 </div>
                               </div>
                             ))}

@@ -16,7 +16,8 @@ import {
   Calendar, 
   TrendingUp, 
   BarChart3,
-  Upload
+  Upload,
+  Trash2
 } from 'lucide-react';
 
 interface WorkoutSession {
@@ -167,6 +168,30 @@ const Dashboard = () => {
     }
   };
 
+  const handleDeletePlan = async (planId: string, planName: string) => {
+    try {
+      const { error } = await supabase
+        .from('workout_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Plan deleted successfully!",
+        description: `${planName} has been removed.`,
+      });
+
+      fetchWorkoutPlans();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error deleting plan",
+        description: error.message,
+      });
+    }
+  };
+
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'push': return 'bg-red-100 text-red-800';
@@ -281,13 +306,23 @@ const Dashboard = () => {
                           Uploaded {new Date(plan.created_at).toLocaleDateString()}
                         </p>
                       </div>
-                      {plan.file_url && (
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={plan.file_url} target="_blank" rel="noopener noreferrer">
-                            View PDF
-                          </a>
+                      <div className="flex gap-2">
+                        {plan.file_url && (
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={plan.file_url} target="_blank" rel="noopener noreferrer">
+                              View PDF
+                            </a>
+                          </Button>
+                        )}
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleDeletePlan(plan.id, plan.name)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>
