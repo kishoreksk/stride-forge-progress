@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -245,11 +245,17 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <AddWorkoutDialog onWorkoutAdded={fetchData} />
           <UploadPlanDialog onPlanUploaded={fetchData} />
           <ProgressPhotoDialog onPhotoUploaded={fetchData} />
           <WeeklyReportDialog onReportGenerated={fetchData} />
+          <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2" asChild>
+            <Link to="/workout-calendar">
+              <Calendar className="h-6 w-6" />
+              <span>Workout Calendar</span>
+            </Link>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
