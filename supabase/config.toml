@@ -1,1 +1,10 @@
 project_id = "eewlouxtzogkeisckwyb"
+
+[functions.test-aiml-connection]
+verify_jwt = false
+
+[functions.process-workout-text]
+verify_jwt = false
+
+[functions.parse-workout-pdf]
+verify_jwt = false
