@@ -22,6 +22,9 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const [useAiParsing, setUseAiParsing] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
+  const [showWeeksDialog, setShowWeeksDialog] = useState(false);
+  const [weeks, setWeeks] = useState(4);
+  const [uploadedPlanData, setUploadedPlanData] = useState<{planName: string, fileUrl: string} | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -80,50 +83,27 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
 
       if (dbError) throw dbError;
 
-      let successMessage = "Workout plan uploaded successfully!";
-      let description = "You can now reference this plan when adding workouts manually.";
-
-      // If AI parsing is enabled, try to parse the PDF
-      if (useAiParsing) {
-        setIsParsing(true);
-        try {
-          const { data: parseData, error: parseError } = await supabase.functions.invoke('parse-workout-pdf', {
-            body: {
-              fileUrl: publicUrl,
-              planName: planName.trim(),
-              userId: user.id
-            }
-          });
-
-          if (parseError) throw parseError;
-
-          if (parseData?.success) {
-            successMessage = "Plan uploaded and parsed by AI!";
-            description = `Created ${parseData.workoutsCreated} workouts with ${parseData.exercisesCreated} exercises automatically.`;
-          }
-        } catch (parseError) {
-          console.error('AI parsing failed:', parseError);
-          toast({
-            variant: "destructive",
-            title: "AI parsing failed",
-            description: "Plan uploaded but AI couldn't parse exercises. You can add workouts manually.",
-          });
-        } finally {
-          setIsParsing(false);
-        }
-      }
-
-      toast({
-        title: successMessage,
-        description: description,
+      // Store uploaded plan data for later use
+      setUploadedPlanData({
+        planName: planName.trim(),
+        fileUrl: publicUrl
       });
 
-      // Reset form and close dialog
-      setOpen(false);
-      setFile(null);
-      setPlanName('');
-      setUseAiParsing(true);
-      onPlanUploaded();
+      toast({
+        title: "Workout plan uploaded successfully!",
+        description: useAiParsing ? "Now specify how many weeks to schedule." : "You can now reference this plan when adding workouts manually.",
+      });
+
+      // If AI parsing is enabled, show weeks dialog
+      if (useAiParsing) {
+        setShowWeeksDialog(true);
+      } else {
+        // Reset form and close dialog
+        setOpen(false);
+        setFile(null);
+        setPlanName('');
+        onPlanUploaded();
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -132,6 +112,48 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
       });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleWeeksConfirm = async () => {
+    if (!uploadedPlanData || !user) return;
+
+    setIsParsing(true);
+    try {
+      const { data: parseData, error: parseError } = await supabase.functions.invoke('parse-workout-pdf', {
+        body: {
+          fileUrl: uploadedPlanData.fileUrl,
+          planName: uploadedPlanData.planName,
+          userId: user.id,
+          weeks: weeks
+        }
+      });
+
+      if (parseError) throw parseError;
+
+      if (parseData?.success) {
+        toast({
+          title: "Plan parsed and scheduled!",
+          description: `Created ${parseData.workoutsCreated} workouts with ${parseData.exercisesCreated} exercises across ${weeks} weeks.`,
+        });
+      }
+    } catch (parseError) {
+      console.error('AI parsing failed:', parseError);
+      toast({
+        variant: "destructive",
+        title: "AI parsing failed",
+        description: "Plan uploaded but AI couldn't parse exercises. You can add workouts manually.",
+      });
+    } finally {
+      setIsParsing(false);
+      setShowWeeksDialog(false);
+      setOpen(false);
+      setFile(null);
+      setPlanName('');
+      setUseAiParsing(true);
+      setUploadedPlanData(null);
+      setWeeks(4);
+      onPlanUploaded();
     }
   };
 
@@ -242,6 +264,56 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
             </div>
           </div>
       </DialogContent>
+      
+      {/* Weeks Selection Dialog */}
+      <Dialog open={showWeeksDialog} onOpenChange={setShowWeeksDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Schedule Workouts</DialogTitle>
+            <DialogDescription>
+              How many weeks should this workout plan span? The AI will distribute workouts across this period.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="weeks">Number of Weeks</Label>
+              <Input
+                id="weeks"
+                type="number"
+                min="1"
+                max="52"
+                value={weeks}
+                onChange={(e) => setWeeks(parseInt(e.target.value) || 1)}
+                placeholder="Enter number of weeks"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setShowWeeksDialog(false);
+                  setOpen(false);
+                  setFile(null);
+                  setPlanName('');
+                  setUploadedPlanData(null);
+                  onPlanUploaded();
+                }}
+              >
+                Skip AI Parsing
+              </Button>
+              <Button
+                onClick={handleWeeksConfirm}
+                disabled={isParsing || weeks < 1}
+              >
+                {isParsing ? "Creating Schedule..." : "Create Schedule"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };

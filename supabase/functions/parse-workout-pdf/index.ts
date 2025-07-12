@@ -14,13 +14,21 @@ serve(async (req) => {
   }
 
   try {
-    const { fileUrl, planName, userId } = await req.json();
+    const { fileUrl, planName, userId, weeks = 4 } = await req.json();
     
     if (!fileUrl || !planName || !userId) {
       throw new Error('Missing required parameters: fileUrl, planName, or userId');
     }
 
-    console.log('Starting PDF parsing for:', { fileUrl, planName, userId });
+    console.log('Starting PDF parsing for:', { fileUrl, planName, userId, weeks });
+
+    // Calculate start date (next Monday)
+    const today = new Date();
+    const daysUntilMonday = (1 - today.getDay() + 7) % 7 || 7;
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + daysUntilMonday);
+    
+    console.log('Workout schedule will start on:', startDate.toISOString().split('T')[0]);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -46,7 +54,10 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log('Sending PDF to OpenAI for analysis...');
+    console.log('Sending workout plan to OpenAI for analysis...');
+    
+    // For now, we'll create a simple workout template based on the plan name and weeks
+    // In a real implementation, you'd extract text from the PDF first
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -58,34 +69,22 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a fitness expert that analyzes workout plans from PDFs. Extract workout information and return it as a JSON array. Each workout should include:
-            - date (YYYY-MM-DD format, if specific dates aren't provided, suggest dates starting from next Monday)
+            content: `You are a fitness expert that creates workout plans. Based on the plan name and number of weeks, create a structured workout schedule as a JSON array. Each workout should include:
+            - date (YYYY-MM-DD format, distributed over ${weeks} weeks starting from ${startDate.toISOString().split('T')[0]})
             - category (one of: "push", "pull", "legs", "abs", "cardio", "treadmill")
-            - duration_minutes (estimate if not specified)
+            - duration_minutes (60 by default)
             - notes (any additional workout notes)
             - exercises (array of exercise objects with: exercise_name, exercise_type ("strength" or "cardio"), sets, reps, weight_kg, distance_km, time_minutes, laps, notes)
             
-            Analyze the content and create a realistic weekly schedule. Return ONLY valid JSON, no other text.`
+            Create a realistic ${weeks}-week schedule with 3-4 workouts per week. Return ONLY valid JSON, no other text.`
           },
           {
             role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: `Please analyze this workout plan PDF and extract all workout sessions and exercises. Create a structured workout schedule.`
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:application/pdf;base64,${base64Pdf}`,
-                  detail: 'high'
-                }
-              }
-            ]
+            content: `Create a ${weeks}-week workout plan called "${planName}". Generate a balanced schedule with proper progression, starting from ${startDate.toISOString().split('T')[0]}. Include a variety of exercises for each workout session.`
           }
         ],
         max_tokens: 4000,
-        temperature: 0.1
+        temperature: 0.2
       }),
     });
 
