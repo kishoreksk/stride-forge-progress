@@ -127,7 +127,7 @@ Notes: Felt strong today, increased weight on squats`;
                   <SelectValue placeholder="Let AI decide" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Let AI decide</SelectItem>
+                  <SelectItem value="auto">Let AI decide</SelectItem>
                   <SelectItem value="push">Push</SelectItem>
                   <SelectItem value="pull">Pull</SelectItem>
                   <SelectItem value="legs">Legs</SelectItem>

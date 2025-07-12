@@ -80,7 +80,7 @@ serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Parse this workout description: "${workoutText}"${category ? ` Category hint: ${category}` : ''}`
+            content: `Parse this workout description: "${workoutText}"${category && category !== 'auto' ? ` Category hint: ${category}` : ''}`
           }
         ],
         max_tokens: 2000,
