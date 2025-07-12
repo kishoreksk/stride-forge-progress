@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Gemini API Connectivity</title>
+</head>
+<body>
+    <h1>Testing Gemini API Connectivity</h1>
+    <button onclick="testConnection()">Test Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                const response = await fetch('https://eewlouxtzogkeisckwyb.supabase.co/functions/v1/test-aiml-connection', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVld2xvdXh0em9na2Vpc2Nrd3liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyOTcwMDgsImV4cCI6MjA2Nzg3MzAwOH0.Z0_FDb-weSEWNzW2R-irof_BNB9NuNyIZby37jQKkhw'
+                    }
+                });
+                
+                const data = await response.json();
+                resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
