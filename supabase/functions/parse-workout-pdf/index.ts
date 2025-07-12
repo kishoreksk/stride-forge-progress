@@ -43,7 +43,7 @@ serve(async (req) => {
 
     console.log('Generating workout plan with AIML...');
     
-    const aimlResponse = await fetch('https://api.aimlapi.com/chat/completions', {
+    const aimlResponse = await fetch('https://api.aimlapi.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${aimlApiKey}`,
