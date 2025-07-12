@@ -136,6 +136,11 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
           title: "Plan parsed and scheduled!",
           description: `Created ${parseData.workoutsCreated} workouts with ${parseData.exercisesCreated} exercises across ${weeks} weeks.`,
         });
+        
+        // Force page refresh to show new workouts
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       }
     } catch (parseError) {
       console.error('AI parsing failed:', parseError);

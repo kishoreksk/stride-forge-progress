@@ -35,29 +35,14 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Download the PDF file
-    console.log('Downloading PDF from:', fileUrl);
-    const pdfResponse = await fetch(fileUrl);
-    if (!pdfResponse.ok) {
-      throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`);
-    }
-
-    const pdfBuffer = await pdfResponse.arrayBuffer();
-    console.log('PDF downloaded, size:', pdfBuffer.byteLength);
-
-    // Convert PDF to base64 for OpenAI
-    const base64Pdf = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
-
-    // Use OpenAI to extract workout information
+    // Use OpenAI to generate workout plan based on plan name and weeks
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
-    console.log('Sending workout plan to OpenAI for analysis...');
+    console.log('Generating workout plan with OpenAI...');
     
-    // For now, we'll create a simple workout template based on the plan name and weeks
-    // In a real implementation, you'd extract text from the PDF first
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -65,46 +50,52 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: `You are a fitness expert that creates workout plans. Based on the plan name and number of weeks, create a structured workout schedule as a JSON array. Each workout should include:
+            content: `You are a fitness expert that creates workout plans. Create a structured workout schedule as a JSON array. Each workout should include:
             - date (YYYY-MM-DD format, distributed over ${weeks} weeks starting from ${startDate.toISOString().split('T')[0]})
             - category (one of: "push", "pull", "legs", "abs", "cardio", "treadmill")
             - duration_minutes (60 by default)
-            - notes (any additional workout notes)
-            - exercises (array of exercise objects with: exercise_name, exercise_type ("strength" or "cardio"), sets, reps, weight_kg, distance_km, time_minutes, laps, notes)
+            - notes (brief workout description)
+            - exercises (array of exercise objects with: exercise_name, exercise_type ("strength" or "cardio"), sets, reps, weight_kg, notes)
             
-            Create a realistic ${weeks}-week schedule with 3-4 workouts per week. Return ONLY valid JSON, no other text.`
+            Create a realistic ${weeks}-week schedule with 3-4 workouts per week. Return ONLY valid JSON array, no other text.`
           },
           {
             role: 'user',
-            content: `Create a ${weeks}-week workout plan called "${planName}". Generate a balanced schedule with proper progression, starting from ${startDate.toISOString().split('T')[0]}. Include a variety of exercises for each workout session.`
+            content: `Create a ${weeks}-week workout plan called "${planName}". Generate a balanced schedule with proper progression, starting from ${startDate.toISOString().split('T')[0]}. Include a variety of exercises for each workout session. Make it comprehensive with different muscle groups and workout types.`
           }
         ],
         max_tokens: 4000,
-        temperature: 0.2
+        temperature: 0.3
       }),
     });
 
     if (!openAIResponse.ok) {
       const errorText = await openAIResponse.text();
       console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${openAIResponse.statusText}`);
+      throw new Error(`OpenAI API error: ${openAIResponse.statusText} - ${errorText}`);
     }
 
     const openAIData = await openAIResponse.json();
-    console.log('OpenAI response received');
+    console.log('OpenAI response received, analyzing...');
 
     let workoutData;
     try {
       const extractedContent = openAIData.choices[0].message.content;
-      console.log('Extracted content:', extractedContent);
-      workoutData = JSON.parse(extractedContent);
+      console.log('Extracted content preview:', extractedContent.substring(0, 200) + '...');
+      
+      // Clean the content in case there's any extra text
+      const jsonMatch = extractedContent.match(/\[[\s\S]*\]/);
+      const jsonContent = jsonMatch ? jsonMatch[0] : extractedContent;
+      
+      workoutData = JSON.parse(jsonContent);
     } catch (parseError) {
       console.error('Failed to parse OpenAI response as JSON:', parseError);
-      throw new Error('Failed to parse workout data from PDF');
+      console.error('Raw content:', openAIData.choices[0].message.content);
+      throw new Error('Failed to parse workout data from AI response');
     }
 
     if (!Array.isArray(workoutData)) {
