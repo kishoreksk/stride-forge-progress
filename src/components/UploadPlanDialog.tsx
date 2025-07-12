@@ -120,32 +120,40 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
       const weeks = parseInt(planDuration);
       const startDate = new Date();
       
-      // Create workout sessions for each week with sample exercises
+      // Create workout sessions for the Kishore plan (6 days: Push, Pull, Legs, Push, Pull, Abs)
       const sessions = [];
       for (let week = 0; week < weeks; week++) {
-        // Create sessions for each day of the week (assuming 6 days training)
-        const categories = ['push', 'pull', 'legs', 'push', 'pull', 'legs'];
+        // Kishore plan structure: Monday-Push, Tuesday-Pull, Wednesday-Legs, Thursday-Push, Friday-Pull, Saturday-Abs
+        const dailyPlan = [
+          { category: 'push', dayName: 'Monday' },
+          { category: 'pull', dayName: 'Tuesday' },
+          { category: 'legs', dayName: 'Wednesday' },
+          { category: 'push', dayName: 'Thursday' },
+          { category: 'pull', dayName: 'Friday' },
+          { category: 'abs', dayName: 'Saturday' }
+        ];
         
         for (let day = 0; day < 6; day++) {
           const sessionDate = new Date(startDate);
-          sessionDate.setDate(startDate.getDate() + (week * 7) + day);
+          // Start from Monday (day 1 of week), skip Sunday (day 0)
+          sessionDate.setDate(startDate.getDate() + (week * 7) + day + (startDate.getDay() === 0 ? 1 : (1 - startDate.getDay())));
           
           const { data: sessionData, error: sessionError } = await supabase
             .from('workout_sessions')
             .insert({
               user_id: user!.id,
               date: sessionDate.toISOString().split('T')[0],
-              category: categories[day] as 'push' | 'pull' | 'legs',
+              category: dailyPlan[day].category as 'push' | 'pull' | 'legs' | 'abs',
               workout_plan_id: uploadedPlanId,
-              duration_minutes: 60
+              duration_minutes: day === 5 ? 45 : 60 // Abs day is shorter
             })
             .select()
             .single();
 
           if (sessionError) throw sessionError;
 
-          // Add sample exercises based on category
-          const exercises = getExercisesByCategory(categories[day]);
+          // Add Kishore plan exercises based on category and day
+          const exercises = getKishoreExercises(dailyPlan[day].category, day);
           
           for (const exercise of exercises) {
             await supabase
@@ -156,7 +164,9 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
                 exercise_type: exercise.type as 'strength' | 'cardio',
                 sets: exercise.sets,
                 reps: exercise.reps,
-                weight_kg: exercise.weight
+                weight_kg: exercise.weight,
+                time_minutes: exercise.time_minutes,
+                notes: exercise.notes
               });
           }
         }
@@ -185,25 +195,80 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
     }
   };
 
-  const getExercisesByCategory = (category: string) => {
-    const exerciseTemplates = {
-      push: [
-        { name: 'Bench Press', type: 'strength', sets: 4, reps: 8, weight: 60 },
-        { name: 'Shoulder Press', type: 'strength', sets: 3, reps: 10, weight: 40 },
-        { name: 'Tricep Dips', type: 'strength', sets: 3, reps: 12, weight: null }
-      ],
-      pull: [
-        { name: 'Pull-ups', type: 'strength', sets: 4, reps: 8, weight: null },
-        { name: 'Barbell Rows', type: 'strength', sets: 4, reps: 10, weight: 50 },
-        { name: 'Bicep Curls', type: 'strength', sets: 3, reps: 12, weight: 20 }
-      ],
-      legs: [
-        { name: 'Squats', type: 'strength', sets: 4, reps: 10, weight: 70 },
-        { name: 'Deadlifts', type: 'strength', sets: 4, reps: 8, weight: 80 },
-        { name: 'Calf Raises', type: 'strength', sets: 3, reps: 15, weight: 30 }
-      ]
-    };
-    return exerciseTemplates[category as keyof typeof exerciseTemplates] || exerciseTemplates.push;
+  const getKishoreExercises = (category: string, dayIndex: number) => {
+    // Kishore workout plan exercises based on the uploaded images
+    switch (category) {
+      case 'push':
+        if (dayIndex === 0) { // Monday - Push Day 1
+          return [
+            { name: 'Flat Barbell Bench Press', type: 'strength', sets: 4, reps: 10, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Incline Dumbbell Press', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Decline Barbell Press', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Overhead Shoulder Press', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Lateral Raises', type: 'strength', sets: 3, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+            { name: 'Tricep Dips', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Overhead Tricep Extension', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Diamond Push-ups', type: 'strength', sets: 3, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' }
+          ];
+        } else { // Thursday - Push Day 2
+          return [
+            { name: 'Dumbbell Bench Press', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Arnold Press', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Tricep Pushdowns', type: 'strength', sets: 4, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+            { name: 'Close Grip Push-ups', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' }
+          ];
+        }
+      
+      case 'pull':
+        if (dayIndex === 1) { // Tuesday - Pull Day 1
+          return [
+            { name: 'Deadlifts', type: 'strength', sets: 4, reps: 8, weight: null, time_minutes: null, notes: '6-8 reps' },
+            { name: 'Wide Grip Lat Pulldown', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Barbell Rows', type: 'strength', sets: 4, reps: 10, weight: null, time_minutes: null, notes: '8-10 reps' },
+            { name: 'Close Grip Lat Pulldown', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Face Pulls', type: 'strength', sets: 3, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+            { name: 'Barbell Bicep Curls', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Hammer Curls', type: 'strength', sets: 3, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+            { name: 'Preacher Curls', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' }
+          ];
+        } else { // Friday - Pull Day 2
+          return [
+            { name: 'Incline Dumbbell Row', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Close Grip Lat Pulldown', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Cable Rows', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+            { name: 'Reverse Fly', type: 'strength', sets: 3, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+            { name: 'Dumbbell Bicep Curls', type: 'strength', sets: 4, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+            { name: 'Cable Bicep Curls', type: 'strength', sets: 3, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+            { name: 'Concentration Curls', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' }
+          ];
+        }
+      
+      case 'legs':
+        return [
+          { name: 'Barbell Squats', type: 'strength', sets: 4, reps: 10, weight: null, time_minutes: null, notes: '8-10 reps' },
+          { name: 'Leg Extension', type: 'strength', sets: 4, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+          { name: 'Romanian Deadlifts', type: 'strength', sets: 4, reps: 10, weight: null, time_minutes: null, notes: '8-10 reps' },
+          { name: 'Leg Curls', type: 'strength', sets: 4, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+          { name: 'Bulgarian Split Squats', type: 'strength', sets: 3, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps each leg' },
+          { name: 'Calf Raises', type: 'strength', sets: 4, reps: 20, weight: null, time_minutes: null, notes: '15-20 reps' },
+          { name: 'Walking Lunges', type: 'strength', sets: 3, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps each leg' },
+          { name: 'Leg Press', type: 'strength', sets: 4, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+          { name: 'Hip Thrusts', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' }
+        ];
+      
+      case 'abs':
+        return [
+          { name: 'Hip Thrusts', type: 'strength', sets: 4, reps: 12, weight: null, time_minutes: null, notes: '10-12 reps' },
+          { name: 'Cable Crunches', type: 'strength', sets: 4, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+          { name: 'Leg Raises', type: 'strength', sets: 4, reps: 15, weight: null, time_minutes: null, notes: '12-15 reps' },
+          { name: 'Plank', type: 'strength', sets: 3, reps: null, weight: null, time_minutes: 1, notes: '3x60 sec' },
+          { name: 'Russian Twists', type: 'strength', sets: 3, reps: 20, weight: null, time_minutes: null, notes: '15-20 reps each side' },
+          { name: 'Treadmill (HIIT)', type: 'cardio', sets: 1, reps: null, weight: null, time_minutes: 30, notes: '2 min walk 1 min run total 30 mins' }
+        ];
+      
+      default:
+        return [];
+    }
   };
 
   return (
@@ -249,7 +314,7 @@ export const UploadPlanDialog = ({ onPlanUploaded }: UploadPlanDialogProps) => {
               <p className="text-sm text-muted-foreground">
                 <Calendar className="h-4 w-4 inline mr-1" />
                 This will create {planDuration ? parseInt(planDuration) * 6 : 0} workout sessions 
-                (6 days per week) with pre-filled exercises based on Push/Pull/Legs split.
+                (6 days per week) with the Kishore workout plan: Mon-Push, Tue-Pull, Wed-Legs, Thu-Push, Fri-Pull, Sat-Abs.
               </p>
             </div>
 
