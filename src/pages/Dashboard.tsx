@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { AddWorkoutDialog } from '@/components/AddWorkoutDialog';
 import { UploadPlanDialog } from '@/components/UploadPlanDialog';
+import { CreateWorkoutDialog } from '@/components/CreateWorkoutDialog';
 import { ProgressPhotoDialog } from '@/components/ProgressPhotoDialog';
 import { WeeklyReportDialog } from '@/components/WeeklyReportDialog';
 import { 
@@ -272,8 +273,9 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <AddWorkoutDialog onWorkoutAdded={fetchData} />
+          <CreateWorkoutDialog onWorkoutCreated={fetchData} />
           <UploadPlanDialog onPlanUploaded={fetchData} />
           <ProgressPhotoDialog onPhotoUploaded={fetchData} />
           <WeeklyReportDialog onReportGenerated={fetchData} />
