@@ -37,6 +37,22 @@ export const CreateWorkoutDialog = ({ onWorkoutCreated }: CreateWorkoutDialogPro
 
     try {
       console.log('Sending workout text to AI for processing...');
+      
+      // First test the AIML connection
+      const { data: testData, error: testError } = await supabase.functions.invoke('test-aiml-connection');
+      
+      if (testError) {
+        console.error('AIML connection test failed:', testError);
+        throw new Error(`Connection test failed: ${testError.message}`);
+      }
+
+      if (!testData?.success) {
+        console.error('AIML API test failed:', testData);
+        throw new Error(`AIML API test failed: ${testData?.error || 'Unknown error'}`);
+      }
+
+      console.log('AIML connection test successful:', testData);
+
       const { data: parseData, error: parseError } = await supabase.functions.invoke('process-workout-text', {
         body: {
           workoutText: workoutText.trim(),
