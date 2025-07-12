@@ -13,7 +13,9 @@ import {
   Dumbbell,
   Clock,
   BarChart3,
-  ArrowLeft
+  ArrowLeft,
+  TrendingUp,
+  Target
 } from 'lucide-react';
 import { UpdateExerciseDialog } from '@/components/UpdateExerciseDialog';
 import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
@@ -33,6 +35,9 @@ interface WorkoutSession {
     reps: number | null;
     weight_kg: number | null;
     notes: string | null;
+    is_progressive: boolean | null;
+    previous_weight_kg: number | null;
+    weight_improvement_kg: number | null;
   }[];
 }
 
@@ -74,7 +79,10 @@ const WorkoutDashboard = () => {
           sets,
           reps,
           weight_kg,
-          notes
+          notes,
+          is_progressive,
+          previous_weight_kg,
+          weight_improvement_kg
         )
       `)
       .eq('user_id', user?.id)
@@ -139,6 +147,10 @@ const WorkoutDashboard = () => {
     total + (workout.duration_minutes || 0), 0
   );
 
+  const progressiveExercises = weeklyWorkouts.reduce((total, workout) => 
+    total + workout.exercises.filter(exercise => exercise.is_progressive).length, 0
+  );
+
   if (loading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -195,7 +207,7 @@ const WorkoutDashboard = () => {
         </div>
 
         {/* Weekly Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Exercises</CardTitle>
@@ -223,6 +235,17 @@ const WorkoutDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalWeeklyDuration} min</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Progressive</CardTitle>
+              <TrendingUp className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">{progressiveExercises}</div>
+              <p className="text-xs text-muted-foreground">Weight increases</p>
             </CardContent>
           </Card>
         </div>
@@ -274,11 +297,19 @@ const WorkoutDashboard = () => {
                                 className="text-xs p-2 bg-muted rounded border space-y-2"
                               >
                                 <div className="flex justify-between items-start">
-                                  <div>
-                                    <div className="font-medium text-foreground">
-                                      {exercise.exercise_name}
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="font-medium text-foreground">
+                                        {exercise.exercise_name}
+                                      </div>
+                                      {exercise.is_progressive && exercise.exercise_type === 'strength' && (
+                                        <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-1 py-0">
+                                          <TrendingUp className="h-3 w-3 mr-1" />
+                                          +{exercise.weight_improvement_kg}kg
+                                        </Badge>
+                                      )}
                                     </div>
-                                    <div className="text-muted-foreground flex items-center space-x-2">
+                                    <div className="text-muted-foreground flex items-center space-x-2 mt-1">
                                       {exercise.sets && (
                                         <span>{exercise.sets} sets</span>
                                       )}
@@ -287,6 +318,11 @@ const WorkoutDashboard = () => {
                                       )}
                                       {exercise.weight_kg && (
                                         <span>• {exercise.weight_kg}kg</span>
+                                      )}
+                                      {exercise.previous_weight_kg && !exercise.is_progressive && (
+                                        <span className="text-orange-600">
+                                          • (prev: {exercise.previous_weight_kg}kg)
+                                        </span>
                                       )}
                                     </div>
                                   </div>

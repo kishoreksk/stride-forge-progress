@@ -21,11 +21,14 @@ export type Database = {
           exercise_name: string
           exercise_type: Database["public"]["Enums"]["exercise_type"]
           id: string
+          is_progressive: boolean | null
           laps: number | null
           notes: string | null
+          previous_weight_kg: number | null
           reps: number | null
           sets: number | null
           time_minutes: number | null
+          weight_improvement_kg: number | null
           weight_kg: number | null
           workout_session_id: string
         }
@@ -35,11 +38,14 @@ export type Database = {
           exercise_name: string
           exercise_type?: Database["public"]["Enums"]["exercise_type"]
           id?: string
+          is_progressive?: boolean | null
           laps?: number | null
           notes?: string | null
+          previous_weight_kg?: number | null
           reps?: number | null
           sets?: number | null
           time_minutes?: number | null
+          weight_improvement_kg?: number | null
           weight_kg?: number | null
           workout_session_id: string
         }
@@ -49,11 +55,14 @@ export type Database = {
           exercise_name?: string
           exercise_type?: Database["public"]["Enums"]["exercise_type"]
           id?: string
+          is_progressive?: boolean | null
           laps?: number | null
           notes?: string | null
+          previous_weight_kg?: number | null
           reps?: number | null
           sets?: number | null
           time_minutes?: number | null
+          weight_improvement_kg?: number | null
           weight_kg?: number | null
           workout_session_id?: string
         }
