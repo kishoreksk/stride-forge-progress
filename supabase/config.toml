@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.parse-workout-pdf]
 verify_jwt = false
+
+[functions.debug-gemini-response]
+verify_jwt = false

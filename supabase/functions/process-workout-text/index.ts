@@ -108,29 +108,88 @@ serve(async (req) => {
     let workoutData;
     try {
       const extractedContent = geminiData.candidates[0].content.parts[0].text;
-      console.log('Extracted content preview:', extractedContent.substring(0, 300) + '...');
+      console.log('Raw Gemini response:', extractedContent);
       
-      // Try to extract JSON from the response - it might be wrapped in markdown
-      let jsonContent = extractedContent;
+      // Multiple parsing strategies
+      let parseSuccess = false;
+      let parseMethod = '';
       
-      // Remove markdown code blocks if present
-      const codeBlockMatch = extractedContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (codeBlockMatch) {
-        jsonContent = codeBlockMatch[1];
+      // Strategy 1: Direct JSON parse
+      if (!parseSuccess) {
+        try {
+          workoutData = JSON.parse(extractedContent);
+          parseSuccess = true;
+          parseMethod = 'direct';
+          console.log('Parsed using direct method');
+        } catch (e) {
+          console.log('Direct parse failed:', e.message);
+        }
       }
       
-      // Try to find JSON object
-      const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonContent = jsonMatch[0];
+      // Strategy 2: Remove markdown code blocks
+      if (!parseSuccess) {
+        try {
+          const codeBlockMatch = extractedContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          if (codeBlockMatch) {
+            workoutData = JSON.parse(codeBlockMatch[1].trim());
+            parseSuccess = true;
+            parseMethod = 'markdown';
+            console.log('Parsed using markdown method');
+          }
+        } catch (e) {
+          console.log('Markdown parse failed:', e.message);
+        }
       }
       
-      console.log('Cleaned JSON content:', jsonContent.substring(0, 200) + '...');
-      workoutData = JSON.parse(jsonContent);
+      // Strategy 3: Find JSON object with greedy matching
+      if (!parseSuccess) {
+        try {
+          const jsonMatch = extractedContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            workoutData = JSON.parse(jsonMatch[0]);
+            parseSuccess = true;
+            parseMethod = 'regex';
+            console.log('Parsed using regex method');
+          }
+        } catch (e) {
+          console.log('Regex parse failed:', e.message);
+        }
+      }
+      
+      // Strategy 4: Try to fix common JSON issues
+      if (!parseSuccess) {
+        try {
+          let cleanedContent = extractedContent
+            .replace(/```json\s*/g, '')
+            .replace(/```\s*/g, '')
+            .replace(/^\s*[\w\s]*?(\{)/g, '$1')  // Remove text before first {
+            .replace(/(\})\s*[\w\s]*$/g, '$1')   // Remove text after last }
+            .trim();
+            
+          workoutData = JSON.parse(cleanedContent);
+          parseSuccess = true;
+          parseMethod = 'cleaned';
+          console.log('Parsed using cleaned method');
+        } catch (e) {
+          console.log('Cleaned parse failed:', e.message);
+        }
+      }
+      
+      if (!parseSuccess) {
+        throw new Error('All parsing strategies failed');
+      }
+      
+      console.log('Parse method used:', parseMethod);
+      console.log('Parsed workout data structure:', {
+        hasWorkoutSession: !!workoutData.workout_session,
+        hasExercises: Array.isArray(workoutData.exercises),
+        exerciseCount: workoutData.exercises?.length || 0
+      });
+      
     } catch (parseError) {
       console.error('Failed to parse Gemini response as JSON:', parseError);
       console.error('Raw content:', geminiData.candidates[0].content.parts[0].text);
-      throw new Error('Failed to parse workout data from AI response');
+      throw new Error(`Failed to parse workout data from AI response: ${parseError.message}`);
     }
 
     if (!workoutData.workout_session || !Array.isArray(workoutData.exercises)) {
