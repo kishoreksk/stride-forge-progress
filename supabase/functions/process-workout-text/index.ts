@@ -36,62 +36,73 @@ serve(async (req) => {
     }
 
     console.log('Sending workout text to AIML for analysis...');
+    console.log('AIML API Key exists:', !!aimlApiKey);
     
-    const aimlResponse = await fetch('https://api.aimlapi.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${aimlApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a fitness expert that analyzes workout descriptions. Extract workout information and return it as a JSON object with this structure:
+    let aimlResponse;
+    try {
+      aimlResponse = await fetch('https://api.aimlapi.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${aimlApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
             {
-              "workout_session": {
-                "category": "push|pull|legs|abs|cardio|treadmill",
-                "duration_minutes": number,
-                "notes": "string"
-              },
-              "exercises": [
-                {
-                  "exercise_name": "string",
-                  "exercise_type": "strength|cardio",
-                  "sets": number,
-                  "reps": number,
-                  "weight_kg": number,
-                  "distance_km": number,
-                  "time_minutes": number,
-                  "laps": number,
+              role: 'system',
+              content: `You are a fitness expert that analyzes workout descriptions. Extract workout information and return it as a JSON object with this structure:
+              {
+                "workout_session": {
+                  "category": "push|pull|legs|abs|cardio|treadmill",
+                  "duration_minutes": number,
                   "notes": "string"
-                }
-              ]
+                },
+                "exercises": [
+                  {
+                    "exercise_name": "string",
+                    "exercise_type": "strength|cardio",
+                    "sets": number,
+                    "reps": number,
+                    "weight_kg": number,
+                    "distance_km": number,
+                    "time_minutes": number,
+                    "laps": number,
+                    "notes": "string"
+                  }
+                ]
+              }
+              
+              Rules:
+              - Infer workout category from exercises if not provided
+              - Extract sets, reps, weights, distances, times from the text
+              - Use null for missing values
+              - Be generous in parsing different formats (e.g., "3x12", "3 sets of 12", etc.)
+              - Estimate duration if not explicitly stated
+              - Return ONLY valid JSON, no other text`
+            },
+            {
+              role: 'user',
+              content: `Parse this workout description: "${workoutText}"${category && category !== 'auto' ? ` Category hint: ${category}` : ''}`
             }
-            
-            Rules:
-            - Infer workout category from exercises if not provided
-            - Extract sets, reps, weights, distances, times from the text
-            - Use null for missing values
-            - Be generous in parsing different formats (e.g., "3x12", "3 sets of 12", etc.)
-            - Estimate duration if not explicitly stated
-            - Return ONLY valid JSON, no other text`
-          },
-          {
-            role: 'user',
-            content: `Parse this workout description: "${workoutText}"${category && category !== 'auto' ? ` Category hint: ${category}` : ''}`
-          }
-        ],
-        max_tokens: 2000,
-        temperature: 0.1
-      }),
-    });
+          ],
+          max_tokens: 2000,
+          temperature: 0.1
+        }),
+      });
+    } catch (fetchError) {
+      console.error('Network error calling AIML API:', fetchError);
+      throw new Error(`Network error: ${fetchError.message}`);
+    }
+
+    console.log('AIML API response status:', aimlResponse.status);
+    console.log('AIML API response headers:', Object.fromEntries(aimlResponse.headers.entries()));
 
     if (!aimlResponse.ok) {
       const errorText = await aimlResponse.text();
-      console.error('AIML API error:', errorText);
-      throw new Error(`AIML API error: ${aimlResponse.statusText} - ${errorText}`);
+      console.error('AIML API error response:', errorText);
+      console.error('AIML API status:', aimlResponse.status, aimlResponse.statusText);
+      throw new Error(`AIML API error (${aimlResponse.status}): ${errorText}`);
     }
 
     const aimlData = await aimlResponse.json();
