@@ -110,10 +110,22 @@ serve(async (req) => {
       const extractedContent = geminiData.candidates[0].content.parts[0].text;
       console.log('Extracted content preview:', extractedContent.substring(0, 300) + '...');
       
-      // Clean the content in case there's any extra text
-      const jsonMatch = extractedContent.match(/\{[\s\S]*\}/);
-      const jsonContent = jsonMatch ? jsonMatch[0] : extractedContent;
+      // Try to extract JSON from the response - it might be wrapped in markdown
+      let jsonContent = extractedContent;
       
+      // Remove markdown code blocks if present
+      const codeBlockMatch = extractedContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (codeBlockMatch) {
+        jsonContent = codeBlockMatch[1];
+      }
+      
+      // Try to find JSON object
+      const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonContent = jsonMatch[0];
+      }
+      
+      console.log('Cleaned JSON content:', jsonContent.substring(0, 200) + '...');
       workoutData = JSON.parse(jsonContent);
     } catch (parseError) {
       console.error('Failed to parse Gemini response as JSON:', parseError);

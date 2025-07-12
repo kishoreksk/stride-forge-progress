@@ -35,56 +35,53 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use AIML API to generate workout plan based on plan name and weeks
-    const aimlApiKey = Deno.env.get('AIML_API_KEY');
-    if (!aimlApiKey) {
-      throw new Error('AIML API key not configured');
+    // Use Gemini API to generate workout plan based on plan name and weeks
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    if (!geminiApiKey) {
+      throw new Error('Gemini API key not configured');
     }
 
-    console.log('Generating workout plan with AIML...');
+    console.log('Generating workout plan with Gemini...');
     
-    const aimlResponse = await fetch('https://api.aimlapi.com/v1/chat/completions', {
+    const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${aimlApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a fitness expert that creates workout plans. Create a structured workout schedule as a JSON array. Each workout should include:
+        contents: [{
+          parts: [{
+            text: `You are a fitness expert that creates workout plans. Create a structured workout schedule as a JSON array. Each workout should include:
             - date (YYYY-MM-DD format, distributed over ${weeks} weeks starting from ${startDate.toISOString().split('T')[0]})
             - category (one of: "push", "pull", "legs", "abs", "cardio", "treadmill")
             - duration_minutes (60 by default)
             - notes (brief workout description)
             - exercises (array of exercise objects with: exercise_name, exercise_type ("strength" or "cardio"), sets, reps, weight_kg, notes)
             
-            Create a realistic ${weeks}-week schedule with 3-4 workouts per week. Return ONLY valid JSON array, no other text.`
-          },
-          {
-            role: 'user',
-            content: `Create a ${weeks}-week workout plan called "${planName}". Generate a balanced schedule with proper progression, starting from ${startDate.toISOString().split('T')[0]}. Include a variety of exercises for each workout session. Make it comprehensive with different muscle groups and workout types.`
-          }
-        ],
-        max_tokens: 4000,
-        temperature: 0.3
+            Create a realistic ${weeks}-week schedule with 3-4 workouts per week. Return ONLY valid JSON array, no other text.
+            
+            Create a ${weeks}-week workout plan called "${planName}". Generate a balanced schedule with proper progression, starting from ${startDate.toISOString().split('T')[0]}. Include a variety of exercises for each workout session. Make it comprehensive with different muscle groups and workout types.`
+          }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 4000,
+          temperature: 0.3
+        }
       }),
     });
 
-    if (!aimlResponse.ok) {
-      const errorText = await aimlResponse.text();
-      console.error('AIML API error:', errorText);
-      throw new Error(`AIML API error: ${aimlResponse.statusText} - ${errorText}`);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error('Gemini API error:', errorText);
+      throw new Error(`Gemini API error: ${geminiResponse.statusText} - ${errorText}`);
     }
 
-    const aimlData = await aimlResponse.json();
-    console.log('AIML response received, analyzing...');
+    const geminiData = await geminiResponse.json();
+    console.log('Gemini response received, analyzing...');
 
     let workoutData;
     try {
-      const extractedContent = aimlData.choices[0].message.content;
+      const extractedContent = geminiData.candidates[0].content.parts[0].text;
       console.log('Extracted content preview:', extractedContent.substring(0, 200) + '...');
       
       // Clean the content in case there's any extra text
@@ -93,8 +90,8 @@ serve(async (req) => {
       
       workoutData = JSON.parse(jsonContent);
     } catch (parseError) {
-      console.error('Failed to parse AIML response as JSON:', parseError);
-      console.error('Raw content:', aimlData.choices[0].message.content);
+      console.error('Failed to parse Gemini response as JSON:', parseError);
+      console.error('Raw content:', geminiData.candidates[0].content.parts[0].text);
       throw new Error('Failed to parse workout data from AI response');
     }
 
