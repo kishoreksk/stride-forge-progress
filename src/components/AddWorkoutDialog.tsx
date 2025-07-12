@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
+import { CalendarIcon, Plus, Trash2, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { SetDetailsDialog } from './SetDetailsDialog';
 
 const workoutSchema = z.object({
   date: z.date(),
@@ -38,6 +39,12 @@ const exerciseSchema = z.object({
   notes: z.string().optional(),
 });
 
+interface ExerciseSet {
+  set_number: number;
+  reps: number;
+  weight_kg?: number;
+}
+
 interface Exercise {
   exercise_name: string;
   exercise_type: 'strength' | 'cardio';
@@ -48,6 +55,7 @@ interface Exercise {
   time_minutes?: number;
   laps?: number;
   notes?: string;
+  exercise_sets?: ExerciseSet[];
 }
 
 interface AddWorkoutDialogProps {
@@ -117,17 +125,37 @@ export const AddWorkoutDialog = ({ onWorkoutAdded, children }: AddWorkoutDialogP
 
       if (sessionError) throw sessionError;
 
-      // Add exercises
-      const exercisesData = exercises.map(exercise => ({
-        workout_session_id: session.id,
-        ...exercise,
-      }));
+      // Add exercises and their sets
+      for (const exercise of exercises) {
+        const { exercise_sets, ...exerciseData } = exercise;
+        
+        const { data: exerciseRecord, error: exerciseError } = await supabase
+          .from('exercises')
+          .insert({
+            workout_session_id: session.id,
+            ...exerciseData,
+          })
+          .select()
+          .single();
 
-      const { error: exercisesError } = await supabase
-        .from('exercises')
-        .insert(exercisesData);
+        if (exerciseError) throw exerciseError;
 
-      if (exercisesError) throw exercisesError;
+        // Add sets if they exist
+        if (exercise_sets && exercise_sets.length > 0) {
+          const setsData = exercise_sets.map(set => ({
+            exercise_id: exerciseRecord.id,
+            set_number: set.set_number,
+            reps: set.reps,
+            weight_kg: exercise.exercise_type === 'strength' ? set.weight_kg : null
+          }));
+
+          const { error: setsError } = await supabase
+            .from('exercise_sets')
+            .insert(setsData);
+
+          if (setsError) throw setsError;
+        }
+      }
 
       toast({
         title: "Workout added successfully!",

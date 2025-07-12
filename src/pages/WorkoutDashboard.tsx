@@ -15,10 +15,12 @@ import {
   BarChart3,
   ArrowLeft,
   TrendingUp,
-  Target
+  Target,
+  Settings
 } from 'lucide-react';
 import { UpdateExerciseDialog } from '@/components/UpdateExerciseDialog';
 import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
+import { SetDetailsDialog } from '@/components/SetDetailsDialog';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO } from 'date-fns';
 
 interface WorkoutSession {
@@ -326,10 +328,22 @@ const WorkoutDashboard = () => {
                                       )}
                                     </div>
                                   </div>
-                                  <UpdateExerciseDialog 
-                                    exercise={exercise} 
-                                    onExerciseUpdated={fetchWeeklyWorkouts} 
-                                  />
+                                   <div className="flex space-x-1">
+                                     <SetDetailsDialog
+                                       exerciseId={exercise.id}
+                                       exerciseName={exercise.exercise_name}
+                                       exerciseType={exercise.exercise_type}
+                                       onSetsUpdated={fetchWeeklyWorkouts}
+                                     >
+                                       <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+                                         <Settings className="h-3 w-3" />
+                                       </Button>
+                                     </SetDetailsDialog>
+                                     <UpdateExerciseDialog 
+                                       exercise={exercise} 
+                                       onExerciseUpdated={fetchWeeklyWorkouts} 
+                                     />
+                                   </div>
                                 </div>
                               </div>
                             ))}

@@ -55,28 +55,38 @@ serve(async (req) => {
                   "duration_minutes": number,
                   "notes": "string"
                 },
-                "exercises": [
-                  {
-                    "exercise_name": "string",
-                    "exercise_type": "strength|cardio",
-                    "sets": number,
-                    "reps": number,
-                    "weight_kg": number,
-                    "distance_km": number,
-                    "time_minutes": number,
-                    "laps": number,
-                    "notes": "string"
-                  }
-                ]
+                 "exercises": [
+                   {
+                     "exercise_name": "string",
+                     "exercise_type": "strength|cardio",
+                     "sets": number,
+                     "reps": number,
+                     "weight_kg": number,
+                     "exercise_sets": [
+                       {
+                         "set_number": number,
+                         "reps": number,
+                         "weight_kg": number
+                       }
+                     ],
+                     "distance_km": number,
+                     "time_minutes": number,
+                     "laps": number,
+                     "notes": "string"
+                   }
+                 ]
               }
               
-              Rules:
-              - Infer workout category from exercises if not provided
-              - Extract sets, reps, weights, distances, times from the text
-              - Use null for missing values
-              - Be generous in parsing different formats (e.g., "3x12", "3 sets of 12", etc.)
-              - Estimate duration if not explicitly stated
-              - Return ONLY valid JSON, no other text
+               Rules:
+               - Infer workout category from exercises if not provided
+               - Extract sets, reps, weights, distances, times from the text
+               - Use null for missing values
+               - Be generous in parsing different formats (e.g., "3x12", "3 sets of 12", etc.)
+               - If user mentions different weights/reps per set (e.g., "10kg for 15 reps, then 15kg for 12 reps"), use exercise_sets array
+               - For simple cases with same weight/reps across sets, use the basic sets/reps/weight_kg fields
+               - exercise_sets should contain individual set data with set_number starting from 1
+               - Estimate duration if not explicitly stated
+               - Return ONLY valid JSON, no other text
               
               Parse this workout description: "${workoutText}"${category && category !== 'auto' ? ` Category hint: ${category}` : ''}`
             }]
@@ -226,7 +236,7 @@ serve(async (req) => {
     
     for (const exercise of workoutData.exercises) {
       try {
-        const { error: exerciseError } = await supabase
+        const { data: exerciseData, error: exerciseError } = await supabase
           .from('exercises')
           .insert({
             workout_session_id: sessionData.id,
@@ -239,12 +249,34 @@ serve(async (req) => {
             time_minutes: exercise.time_minutes || null,
             laps: exercise.laps || null,
             notes: exercise.notes || null
-          });
+          })
+          .select()
+          .single();
 
         if (exerciseError) {
           console.error('Error creating exercise:', exerciseError);
         } else {
           createdExercises++;
+          
+          // Create exercise sets if provided
+          if (exercise.exercise_sets && Array.isArray(exercise.exercise_sets) && exercise.exercise_sets.length > 0) {
+            const setsData = exercise.exercise_sets.map(set => ({
+              exercise_id: exerciseData.id,
+              set_number: set.set_number,
+              reps: set.reps,
+              weight_kg: exercise.exercise_type === 'strength' ? set.weight_kg : null
+            }));
+
+            const { error: setsError } = await supabase
+              .from('exercise_sets')
+              .insert(setsData);
+
+            if (setsError) {
+              console.error('Error creating exercise sets:', setsError);
+            } else {
+              console.log(`Created ${setsData.length} sets for exercise: ${exercise.exercise_name}`);
+            }
+          }
         }
       } catch (exerciseError) {
         console.error('Error processing exercise:', exerciseError);

@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      exercise_sets: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          reps: number
+          set_number: number
+          weight_kg: number | null
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          reps: number
+          set_number: number
+          weight_kg?: number | null
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          reps?: number
+          set_number?: number
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_sets_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           created_at: string
