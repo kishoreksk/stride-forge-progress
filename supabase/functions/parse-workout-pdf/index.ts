@@ -35,18 +35,18 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use OpenAI to generate workout plan based on plan name and weeks
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OpenAI API key not configured');
+    // Use AIML API to generate workout plan based on plan name and weeks
+    const aimlApiKey = Deno.env.get('AIML_API_KEY');
+    if (!aimlApiKey) {
+      throw new Error('AIML API key not configured');
     }
 
-    console.log('Generating workout plan with OpenAI...');
+    console.log('Generating workout plan with AIML...');
     
-    const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    const aimlResponse = await fetch('https://api.aimlapi.com/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
+        'Authorization': `Bearer ${aimlApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -73,18 +73,18 @@ serve(async (req) => {
       }),
     });
 
-    if (!openAIResponse.ok) {
-      const errorText = await openAIResponse.text();
-      console.error('OpenAI API error:', errorText);
-      throw new Error(`OpenAI API error: ${openAIResponse.statusText} - ${errorText}`);
+    if (!aimlResponse.ok) {
+      const errorText = await aimlResponse.text();
+      console.error('AIML API error:', errorText);
+      throw new Error(`AIML API error: ${aimlResponse.statusText} - ${errorText}`);
     }
 
-    const openAIData = await openAIResponse.json();
-    console.log('OpenAI response received, analyzing...');
+    const aimlData = await aimlResponse.json();
+    console.log('AIML response received, analyzing...');
 
     let workoutData;
     try {
-      const extractedContent = openAIData.choices[0].message.content;
+      const extractedContent = aimlData.choices[0].message.content;
       console.log('Extracted content preview:', extractedContent.substring(0, 200) + '...');
       
       // Clean the content in case there's any extra text
@@ -93,8 +93,8 @@ serve(async (req) => {
       
       workoutData = JSON.parse(jsonContent);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response as JSON:', parseError);
-      console.error('Raw content:', openAIData.choices[0].message.content);
+      console.error('Failed to parse AIML response as JSON:', parseError);
+      console.error('Raw content:', aimlData.choices[0].message.content);
       throw new Error('Failed to parse workout data from AI response');
     }
 
