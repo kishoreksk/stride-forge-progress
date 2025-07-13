@@ -23,6 +23,13 @@ import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
 import { SetDetailsDialog } from '@/components/SetDetailsDialog';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO } from 'date-fns';
 
+interface ExerciseSet {
+  id: string;
+  set_number: number;
+  reps: number;
+  weight_kg: number | null;
+}
+
 interface WorkoutSession {
   id: string;
   date: string;
@@ -40,6 +47,7 @@ interface WorkoutSession {
     is_progressive: boolean | null;
     previous_weight_kg: number | null;
     weight_improvement_kg: number | null;
+    exercise_sets?: ExerciseSet[];
   }[];
 }
 
@@ -84,7 +92,13 @@ const WorkoutDashboard = () => {
           notes,
           is_progressive,
           previous_weight_kg,
-          weight_improvement_kg
+          weight_improvement_kg,
+          exercise_sets (
+            id,
+            set_number,
+            reps,
+            weight_kg
+          )
         )
       `)
       .eq('user_id', user?.id)
@@ -311,22 +325,51 @@ const WorkoutDashboard = () => {
                                         </Badge>
                                       )}
                                     </div>
-                                    <div className="text-muted-foreground flex items-center space-x-2 mt-1">
-                                      {exercise.sets && (
-                                        <span>{exercise.sets} sets</span>
-                                      )}
-                                      {exercise.reps && (
-                                        <span>• {exercise.reps} reps</span>
-                                      )}
-                                      {exercise.weight_kg && (
-                                        <span>• {exercise.weight_kg}kg</span>
-                                      )}
-                                      {exercise.previous_weight_kg && !exercise.is_progressive && (
-                                        <span className="text-orange-600">
-                                          • (prev: {exercise.previous_weight_kg}kg)
-                                        </span>
-                                      )}
-                                    </div>
+                                     {/* Display individual sets */}
+                                     {exercise.exercise_sets && exercise.exercise_sets.length > 0 ? (
+                                       <div className="space-y-1 mt-2">
+                                         <div className="text-muted-foreground text-xs">Sets:</div>
+                                         <div className="grid grid-cols-2 gap-1">
+                                           {exercise.exercise_sets
+                                             .sort((a, b) => a.set_number - b.set_number)
+                                             .map((set) => (
+                                               <div 
+                                                 key={set.id} 
+                                                 className="flex items-center justify-between bg-background/50 rounded px-2 py-1 text-xs"
+                                               >
+                                                 <span className="text-muted-foreground">Set {set.set_number}:</span>
+                                                 <span className="font-medium">
+                                                   {set.reps} reps
+                                                   {set.weight_kg && ` × ${set.weight_kg}kg`}
+                                                 </span>
+                                               </div>
+                                             ))
+                                           }
+                                         </div>
+                                         {exercise.previous_weight_kg && !exercise.is_progressive && (
+                                           <div className="text-orange-600 text-xs">
+                                             Previous: {exercise.previous_weight_kg}kg
+                                           </div>
+                                         )}
+                                       </div>
+                                     ) : (
+                                       <div className="text-muted-foreground flex items-center space-x-2 mt-1">
+                                         {exercise.sets && (
+                                           <span>{exercise.sets} sets</span>
+                                         )}
+                                         {exercise.reps && (
+                                           <span>• {exercise.reps} reps</span>
+                                         )}
+                                         {exercise.weight_kg && (
+                                           <span>• {exercise.weight_kg}kg</span>
+                                         )}
+                                         {exercise.previous_weight_kg && !exercise.is_progressive && (
+                                           <span className="text-orange-600">
+                                             • (prev: {exercise.previous_weight_kg}kg)
+                                           </span>
+                                         )}
+                                       </div>
+                                     )}
                                   </div>
                                    <div className="flex space-x-1">
                                      <SetDetailsDialog
