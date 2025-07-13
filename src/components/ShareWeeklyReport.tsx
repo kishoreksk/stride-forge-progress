@@ -35,7 +35,7 @@ export const ShareWeeklyReport = ({ weekStartDate }: ShareWeeklyReportProps) => 
     setIsGenerating(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('shared-report', {
+      const { data, error } = await supabase.functions.invoke('shared-report?action=create', {
         body: {
           weekStartDate: format(weekStartDate, 'yyyy-MM-dd'),
           title: title || `Weekly Progress - ${format(weekStartDate, 'MMM d, yyyy')}`
