@@ -369,37 +369,20 @@ const SharedReportPage = () => {
           </Card>
         )}
 
-        {/* Comments Section */}
+        {/* Comments Section - For adding comments only */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5" />
-              Comments & Feedback
+              Leave Feedback
             </CardTitle>
             <CardDescription>
-              Leave your comments, encouragement, or feedback below
+              Share your thoughts, encouragement, or feedback
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Existing Comments */}
-            {comments.length > 0 && (
-              <div className="space-y-4 mb-6">
-                {comments.map((comment: any) => (
-                  <div key={comment.id} className="bg-muted rounded-lg p-4 border-l-4 border-primary">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className="font-medium text-sm">{comment.commenter_name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(comment.created_at), 'MMM d, h:mm a')}
-                      </span>
-                    </div>
-                    <p className="text-sm">{comment.comment_text}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* Add Comment Form */}
-            <div className="space-y-4 pt-4 border-t">
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="name">Your Name</Label>
