@@ -4,6 +4,31 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 // PDF generation dependencies  
 import { jsPDF } from 'https://esm.sh/jspdf@2.5.1'
 
+// Helper function to fetch image as base64
+async function fetchImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      console.error('Failed to fetch image:', response.status, response.statusText)
+      return null
+    }
+    
+    const arrayBuffer = await response.arrayBuffer()
+    const bytes = new Uint8Array(arrayBuffer)
+    let binary = ''
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i])
+    }
+    
+    const base64 = btoa(binary)
+    const mimeType = response.headers.get('content-type') || 'image/jpeg'
+    return `data:${mimeType};base64,${base64}`
+  } catch (error) {
+    console.error('Error fetching image:', error)
+    return null
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -218,25 +243,61 @@ serve(async (req) => {
       doc.text('Progress Photos', 20, yPosition)
       yPosition += 15
 
-      // Note: For a simple PDF, we'll just list the photo information
-      // Full image embedding would require additional libraries and base64 conversion
+      // Embed actual photos
       for (let i = 0; i < progressPhotos.length; i++) {
         const photo = progressPhotos[i]
-        doc.setFontSize(10)
-        doc.text(`Photo ${i + 1}:`, 20, yPosition)
-        yPosition += 4
-        doc.text(`Uploaded: ${new Date(photo.created_at).toLocaleDateString()}`, 25, yPosition)
-        yPosition += 4
-        if (photo.notes) {
-          doc.text(`Notes: ${photo.notes}`, 25, yPosition)
-          yPosition += 4
+        
+        // Check if we need a new page
+        if (yPosition > 200) {
+          doc.addPage()
+          yPosition = 20
         }
-        yPosition += 5
-      }
 
-      // Add note about photo access
-      doc.setFontSize(8)
-      doc.text('Note: Progress photos can be viewed in the web application.', 20, yPosition + 10)
+        doc.setFontSize(12)
+        doc.text(`Photo ${i + 1}`, 20, yPosition)
+        yPosition += 5
+        
+        doc.setFontSize(10)
+        doc.text(`Uploaded: ${new Date(photo.created_at).toLocaleDateString()}`, 20, yPosition)
+        yPosition += 5
+        
+        if (photo.notes) {
+          doc.text(`Notes: ${photo.notes}`, 20, yPosition)
+          yPosition += 5
+        }
+        
+        yPosition += 5
+
+        try {
+          // Fetch and embed the actual image
+          console.log('Fetching image from:', photo.photo_url)
+          const imageBase64 = await fetchImageAsBase64(photo.photo_url)
+          
+          if (imageBase64) {
+            // Calculate image dimensions (max width 150, maintain aspect ratio)
+            const maxWidth = 150
+            const maxHeight = 100
+            
+            // Add the image to PDF
+            doc.addImage(imageBase64, 'JPEG', 20, yPosition, maxWidth, maxHeight)
+            yPosition += maxHeight + 10
+            
+            console.log('Successfully added image to PDF')
+          } else {
+            // Fallback if image can't be loaded
+            doc.setFontSize(8)
+            doc.text('Image could not be loaded', 20, yPosition)
+            yPosition += 10
+          }
+        } catch (error) {
+          console.error('Error adding image to PDF:', error)
+          doc.setFontSize(8)
+          doc.text('Error loading image', 20, yPosition)
+          yPosition += 10
+        }
+        
+        yPosition += 10
+      }
     }
 
     // Generate PDF buffer
