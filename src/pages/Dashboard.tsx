@@ -289,11 +289,11 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Upload July 6 Photos */}
+        /* {/* Upload July 6 Photos */}
         <div className="mb-8 flex gap-4">
           <UploadSpecificPhotos />
           <DeleteAllPhotos />
-        </div>
+        </div> */
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Workout Plans */}
