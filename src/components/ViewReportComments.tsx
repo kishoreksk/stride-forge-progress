@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 
@@ -24,15 +25,26 @@ export const ViewReportComments = ({ weekStartDate }: ViewReportCommentsProps) =
   const [isLoading, setIsLoading] = useState(false);
   const [sharedReportExists, setSharedReportExists] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchComments = async () => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication required",
+        description: "You must be logged in to view comments",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
-      // First check if there's a shared report for this week
+      // First check if there's a shared report for this week by this user
       const { data: sharedReports, error: reportsError } = await supabase
         .from('shared_reports')
         .select('id, share_token, title')
         .eq('week_start_date', format(weekStartDate, 'yyyy-MM-dd'))
+        .eq('user_id', user.id)
         .eq('is_active', true);
 
       if (reportsError) throw reportsError;
