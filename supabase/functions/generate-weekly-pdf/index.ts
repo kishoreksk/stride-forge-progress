@@ -2,11 +2,12 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1'
 
 // PDF generation dependencies  
-import { jsPDF } from 'https://esm.sh/jspdf@2.5.1'
+import { jsPDF } from 'https://esm.sh/jspdf@2.5.2'
 
 // Helper function to fetch image as base64
-async function fetchImageAsBase64(url: string): Promise<string | null> {
+async function fetchImageAsBase64(url: string): Promise<{ data: string; width: number; height: number; format: string } | null> {
   try {
+    console.log('Fetching image from URL:', url)
     const response = await fetch(url)
     if (!response.ok) {
       console.error('Failed to fetch image:', response.status, response.statusText)
@@ -15,14 +16,31 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
     
     const arrayBuffer = await response.arrayBuffer()
     const bytes = new Uint8Array(arrayBuffer)
+    
+    // Convert to base64
     let binary = ''
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i])
     }
-    
     const base64 = btoa(binary)
-    const mimeType = response.headers.get('content-type') || 'image/jpeg'
-    return `data:${mimeType};base64,${base64}`
+    
+    // Determine format from content type or URL
+    const contentType = response.headers.get('content-type') || ''
+    let format = 'JPEG'
+    if (contentType.includes('png') || url.toLowerCase().includes('.png')) {
+      format = 'PNG'
+    } else if (contentType.includes('gif') || url.toLowerCase().includes('.gif')) {
+      format = 'GIF'
+    }
+    
+    console.log('Image fetched successfully, format:', format, 'size:', bytes.length)
+    
+    return {
+      data: `data:${contentType || 'image/jpeg'};base64,${base64}`,
+      width: 150, // Default width
+      height: 100, // Default height  
+      format: format
+    }
   } catch (error) {
     console.error('Error fetching image:', error)
     return null
@@ -107,6 +125,14 @@ serve(async (req) => {
     }
 
     console.log('Found', workouts?.length || 0, 'workouts and', progressPhotos?.length || 0, 'photos')
+    
+    // Log photo URLs for debugging
+    if (progressPhotos && progressPhotos.length > 0) {
+      console.log('Photo URLs:')
+      progressPhotos.forEach((photo, index) => {
+        console.log(`Photo ${index + 1}: ${photo.photo_url}`)
+      })
+    }
 
     // Calculate statistics
     const totalWorkouts = workouts?.length || 0
@@ -270,29 +296,45 @@ serve(async (req) => {
 
         try {
           // Fetch and embed the actual image
-          console.log('Fetching image from:', photo.photo_url)
-          const imageBase64 = await fetchImageAsBase64(photo.photo_url)
+          console.log('Attempting to fetch image:', photo.photo_url)
+          const imageData = await fetchImageAsBase64(photo.photo_url)
           
-          if (imageBase64) {
-            // Calculate image dimensions (max width 150, maintain aspect ratio)
-            const maxWidth = 150
-            const maxHeight = 100
+          if (imageData) {
+            console.log('Image data received, adding to PDF...')
+            
+            // Check if we have enough space for the image
+            if (yPosition + imageData.height > 280) {
+              doc.addPage()
+              yPosition = 20
+              
+              // Re-add photo title on new page
+              doc.setFontSize(12)
+              doc.text(`Photo ${i + 1} (continued)`, 20, yPosition)
+              yPosition += 10
+            }
             
             // Add the image to PDF
-            doc.addImage(imageBase64, 'JPEG', 20, yPosition, maxWidth, maxHeight)
-            yPosition += maxHeight + 10
-            
-            console.log('Successfully added image to PDF')
+            try {
+              doc.addImage(imageData.data, imageData.format, 20, yPosition, imageData.width, imageData.height)
+              yPosition += imageData.height + 10
+              console.log('Successfully added image to PDF')
+            } catch (imageError) {
+              console.error('Error adding image to PDF:', imageError)
+              doc.setFontSize(8)
+              doc.text('Image format not supported in PDF', 20, yPosition)
+              yPosition += 10
+            }
           } else {
             // Fallback if image can't be loaded
+            console.log('Image could not be fetched')
             doc.setFontSize(8)
-            doc.text('Image could not be loaded', 20, yPosition)
+            doc.text('Image could not be loaded from storage', 20, yPosition)
             yPosition += 10
           }
         } catch (error) {
-          console.error('Error adding image to PDF:', error)
+          console.error('Error processing image:', error)
           doc.setFontSize(8)
-          doc.text('Error loading image', 20, yPosition)
+          doc.text(`Error loading image: ${error.message}`, 20, yPosition)
           yPosition += 10
         }
         
