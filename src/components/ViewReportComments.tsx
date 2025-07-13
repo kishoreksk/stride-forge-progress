@@ -47,23 +47,46 @@ export const ViewReportComments = ({ weekStartDate }: ViewReportCommentsProps) =
         .eq('user_id', user.id)
         .eq('is_active', true);
 
+      console.log('Searching for shared reports for date:', format(weekStartDate, 'yyyy-MM-dd'), 'user:', user.id);
+
       if (reportsError) throw reportsError;
+
+      console.log('Found shared reports:', sharedReports);
 
       if (sharedReports && sharedReports.length > 0) {
         setSharedReportExists(true);
-        const sharedReport = sharedReports[0];
+        
+        // Get all comments for all shared reports for this week
+        const allComments: Comment[] = [];
+        
+        for (const sharedReport of sharedReports) {
+          console.log('Fetching comments for shared report:', sharedReport.id);
+          
+          const { data: commentsData, error: commentsError } = await supabase
+            .from('report_comments')
+            .select('*')
+            .eq('shared_report_id', sharedReport.id)
+            .order('created_at', { ascending: false });
 
-        // Fetch comments for this shared report
-        const { data: commentsData, error: commentsError } = await supabase
-          .from('report_comments')
-          .select('*')
-          .eq('shared_report_id', sharedReport.id)
-          .order('created_at', { ascending: false });
+          if (commentsError) {
+            console.error('Error fetching comments for report:', sharedReport.id, commentsError);
+            continue;
+          }
 
-        if (commentsError) throw commentsError;
-
-        setComments(commentsData || []);
+          console.log('Comments found for report', sharedReport.id, ':', commentsData);
+          
+          if (commentsData) {
+            allComments.push(...commentsData);
+          }
+        }
+        
+        // Sort all comments by created_at descending
+        allComments.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        
+        console.log('Total comments found:', allComments);
+        setComments(allComments);
       } else {
+        console.log('No shared reports found for this week');
         setSharedReportExists(false);
         setComments([]);
       }
