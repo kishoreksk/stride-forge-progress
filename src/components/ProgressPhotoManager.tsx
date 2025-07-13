@@ -78,10 +78,12 @@ export const ProgressPhotoManager = ({ weekStartDate, onPhotoUpdate }: ProgressP
 
     setIsUploading(true);
     try {
-      // Generate unique filename
+      // Generate unique filename with user folder structure
       const timestamp = new Date().getTime();
       const fileExt = selectedFile.name.split('.').pop();
-      const fileName = `progress_${user.id}_${format(weekStartDate, 'yyyy-MM-dd')}_${timestamp}.${fileExt}`;
+      const fileName = `${user.id}/progress_${format(weekStartDate, 'yyyy-MM-dd')}_${timestamp}.${fileExt}`;
+
+      console.log('Uploading file with name:', fileName);
 
       // Upload to storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -132,14 +134,20 @@ export const ProgressPhotoManager = ({ weekStartDate, onPhotoUpdate }: ProgressP
 
   const deletePhoto = async (photoId: string, photoUrl: string) => {
     try {
-      // Extract filename from URL
-      const fileName = photoUrl.split('/').pop();
+      // Extract filename from URL (should include user folder)
+      const urlParts = photoUrl.split('/progress-photos/')
+      const fileName = urlParts[1] // This should be "userId/filename.ext"
       
+      console.log('Deleting file:', fileName);
       // Delete from storage
       if (fileName) {
-        await supabase.storage
+        const { error: storageError } = await supabase.storage
           .from('progress-photos')
           .remove([fileName]);
+          
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
+        }
       }
 
       // Delete from database
