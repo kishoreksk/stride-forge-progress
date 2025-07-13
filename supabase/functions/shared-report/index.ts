@@ -60,7 +60,7 @@ serve(async (req) => {
         JSON.stringify({ 
           success: true, 
           shareToken,
-          shareUrl: `${req.url.split('/functions')[0]}/share/${shareToken}`
+          shareUrl: `${new URL(req.url).origin}/share/${shareToken}`
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
