@@ -15,7 +15,7 @@ interface WeeklyReportDialogProps {
 
 interface WeeklyData {
   workouts: any[];
-  progressPhoto: any;
+  progressPhotos: any[];
   totalWorkouts: number;
   totalSets: number;
   totalExercises: number;
@@ -60,13 +60,13 @@ export const WeeklyReportDialog = ({ onReportGenerated }: WeeklyReportDialogProp
 
       if (workoutsError) throw workoutsError;
 
-      // Fetch progress photo for the week
-      const { data: progressPhoto, error: photoError } = await supabase
+      // Fetch progress photos for the week (can be multiple)
+      const { data: progressPhotos, error: photoError } = await supabase
         .from('progress_photos')
         .select('*')
         .eq('user_id', user.id)
         .eq('week_start_date', format(weekStart, 'yyyy-MM-dd'))
-        .single();
+        .order('created_at', { ascending: true });
 
       // Calculate statistics
       const totalWorkouts = workouts?.length || 0;
@@ -78,7 +78,7 @@ export const WeeklyReportDialog = ({ onReportGenerated }: WeeklyReportDialogProp
 
       setWeeklyData({
         workouts: workouts || [],
-        progressPhoto: photoError ? null : progressPhoto,
+        progressPhotos: photoError ? [] : (progressPhotos || []),
         totalWorkouts,
         totalSets,
         totalExercises,
@@ -169,11 +169,16 @@ export const WeeklyReportDialog = ({ onReportGenerated }: WeeklyReportDialogProp
             </div>
           `).join('')}
 
-          ${weeklyData.progressPhoto ? `
+          ${weeklyData.progressPhotos && weeklyData.progressPhotos.length > 0 ? `
             <div class="progress-photo">
-              <h2>Progress Photo</h2>
-              <img src="${weeklyData.progressPhoto.photo_url}" alt="Progress Photo" />
-              ${weeklyData.progressPhoto.notes ? `<p>${weeklyData.progressPhoto.notes}</p>` : ''}
+              <h2>Progress Photos</h2>
+              ${weeklyData.progressPhotos.map((photo: any, index: number) => `
+                <div style="margin-bottom: 20px;">
+                  <h3>Photo ${index + 1}</h3>
+                  <img src="${photo.photo_url}" alt="Progress Photo ${index + 1}" />
+                  ${photo.notes ? `<p><em>${photo.notes}</em></p>` : ''}
+                </div>
+              `).join('')}
             </div>
           ` : ''}
         </body>
@@ -363,27 +368,38 @@ export const WeeklyReportDialog = ({ onReportGenerated }: WeeklyReportDialogProp
                 </Card>
               )}
 
-              {/* Progress Photo */}
-              {weeklyData.progressPhoto && (
+              {/* Progress Photos */}
+              {weeklyData.progressPhotos && weeklyData.progressPhotos.length > 0 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Progress Photo</CardTitle>
+                    <CardTitle>Progress Photos</CardTitle>
                     <CardDescription>
-                      Uploaded on {format(new Date(weeklyData.progressPhoto.created_at), 'PPP')}
+                      {weeklyData.progressPhotos.length} photo(s) for this week
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center">
-                      <img
-                        src={weeklyData.progressPhoto.photo_url}
-                        alt="Progress photo"
-                        className="max-w-xs mx-auto rounded-lg"
-                      />
-                      {weeklyData.progressPhoto.notes && (
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {weeklyData.progressPhoto.notes}
-                        </p>
-                      )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {weeklyData.progressPhotos.map((photo: any, index: number) => (
+                        <div key={photo.id} className="text-center">
+                          <img
+                            src={photo.photo_url}
+                            alt={`Progress photo ${index + 1}`}
+                            className="w-full max-w-xs mx-auto rounded-lg border"
+                            onError={(e) => {
+                              console.error('Image failed to load:', photo.photo_url);
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          {photo.notes && (
+                            <p className="mt-2 text-sm text-muted-foreground">
+                              {photo.notes}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Uploaded: {format(new Date(photo.created_at), 'MMM d, yyyy')}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
