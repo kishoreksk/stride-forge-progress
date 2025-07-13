@@ -39,12 +39,19 @@ export const WeeklyReportDialog = ({ onReportGenerated }: WeeklyReportDialogProp
       const weekStart = startOfWeek(weekDate);
       const weekEnd = endOfWeek(weekDate);
 
-      // Fetch workouts for the week
+      // Fetch workouts for the week with detailed exercise sets
       const { data: workouts, error: workoutsError } = await supabase
         .from('workout_sessions')
         .select(`
           *,
-          exercises (*)
+          exercises (
+            *,
+            exercise_sets (
+              set_number,
+              reps,
+              weight_kg
+            )
+          )
         `)
         .eq('user_id', user.id)
         .gte('date', format(weekStart, 'yyyy-MM-dd'))
@@ -109,8 +116,9 @@ export const WeeklyReportDialog = ({ onReportGenerated }: WeeklyReportDialogProp
             .stat-card { text-align: center; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
             .workout { margin: 15px 0; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
             .exercise { margin: 8px 0; padding: 8px; background: #f9f9f9; border-radius: 4px; }
-            .progress-photo { text-align: center; margin: 20px 0; }
-            .progress-photo img { max-width: 300px; height: auto; }
+            .progress-photo { text-align: center; margin: 20px 0; page-break-inside: avoid; }
+            .progress-photo img { max-width: 400px; height: auto; border: 1px solid #ddd; border-radius: 8px; }
+            @media print { .progress-photo { page-break-before: always; } }
           </style>
         </head>
         <body>
@@ -144,13 +152,18 @@ export const WeeklyReportDialog = ({ onReportGenerated }: WeeklyReportDialogProp
               ${workout.exercises.map((exercise: any) => `
                 <div class="exercise">
                   <strong>${exercise.exercise_name}</strong> (${exercise.exercise_type})
-                  ${exercise.sets ? `- Sets: ${exercise.sets}` : ''}
-                  ${exercise.reps ? `, Reps: ${exercise.reps}` : ''}
-                  ${exercise.weight_kg ? `, Weight: ${exercise.weight_kg}kg` : ''}
-                  ${exercise.distance_km ? `, Distance: ${exercise.distance_km}km` : ''}
-                  ${exercise.time_minutes ? `, Time: ${exercise.time_minutes} min` : ''}
-                  ${exercise.laps ? `, Laps: ${exercise.laps}` : ''}
-                  ${exercise.notes ? `<br>Notes: ${exercise.notes}` : ''}
+                  ${exercise.distance_km ? `<br>Distance: ${exercise.distance_km}km` : ''}
+                  ${exercise.time_minutes ? `<br>Time: ${exercise.time_minutes} min` : ''}
+                  ${exercise.laps ? `<br>Laps: ${exercise.laps}` : ''}
+                  ${exercise.exercise_sets && exercise.exercise_sets.length > 0 ? `
+                    <br><strong>Sets:</strong>
+                    <div style="margin-left: 20px;">
+                      ${exercise.exercise_sets.map((set: any) => `
+                        <div>Set ${set.set_number}: ${set.reps} reps${set.weight_kg ? ` @ ${set.weight_kg}kg` : ''}</div>
+                      `).join('')}
+                    </div>
+                  ` : exercise.sets ? `<br>Sets: ${exercise.sets}${exercise.reps ? `, Reps: ${exercise.reps}` : ''}${exercise.weight_kg ? `, Weight: ${exercise.weight_kg}kg` : ''}` : ''}
+                  ${exercise.notes ? `<br><em>Notes: ${exercise.notes}</em>` : ''}
                 </div>
               `).join('')}
             </div>
