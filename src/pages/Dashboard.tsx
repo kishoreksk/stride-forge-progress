@@ -278,8 +278,8 @@ const Dashboard = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
           <AddWorkoutDialog onWorkoutAdded={fetchData} />
           <CreateWorkoutDialog onWorkoutCreated={fetchData} />
-          <UploadPlanDialog onPlanUploaded={fetchData} />
-          <ProgressPhotoDialog onPhotoUploaded={fetchData} />
+          {/* <UploadPlanDialog onPlanUploaded={fetchData} /> */}
+          {/* <ProgressPhotoDialog onPhotoUploaded={fetchData} /> */}
           <WeeklyReportDialog onReportGenerated={fetchData} />
           <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2" asChild>
             <Link to="/workout-calendar">
