@@ -1,0 +1,447 @@
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { 
+  Calendar, 
+  Dumbbell, 
+  BarChart3, 
+  TrendingUp, 
+  Clock,
+  MapPin,
+  User,
+  MessageCircle,
+  Send
+} from 'lucide-react';
+import { format } from 'date-fns';
+
+interface SharedReportData {
+  report: any;
+  workouts: any[];
+  progressPhotos: any[];
+  comments: any[];
+  stats: {
+    totalWorkouts: number;
+    totalExercises: number;
+    totalSets: number;
+    categoriesWorked: string[];
+  };
+  weekRange: {
+    start: string;
+    end: string;
+  };
+}
+
+const SharedReportPage = () => {
+  const { token } = useParams<{ token: string }>();
+  const [reportData, setReportData] = useState<SharedReportData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [commenterName, setCommenterName] = useState('');
+  const [commentText, setCommentText] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (token) {
+      fetchReportData();
+    }
+  }, [token]);
+
+  const fetchReportData = async () => {
+    try {
+      const response = await fetch(`https://eewlouxtzogkeisckwyb.supabase.co/functions/v1/shared-report?token=${token}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setReportData(data);
+      } else {
+        throw new Error(data.error || 'Report not found');
+      }
+    } catch (error: any) {
+      console.error('Error fetching shared report:', error);
+      toast({
+        variant: "destructive",
+        title: "Error loading report",
+        description: error.message || "Failed to load shared report",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const submitComment = async () => {
+    if (!commenterName.trim() || !commentText.trim() || !token) {
+      toast({
+        variant: "destructive",
+        title: "Invalid input",
+        description: "Please enter both your name and comment",
+      });
+      return;
+    }
+
+    setIsSubmittingComment(true);
+
+    try {
+      const response = await fetch(`https://eewlouxtzogkeisckwyb.supabase.co/functions/v1/shared-report?action=comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          shareToken: token,
+          commenterName: commenterName.trim(),
+          commentText: commentText.trim()
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Comment added!",
+          description: "Your comment has been posted successfully.",
+        });
+        
+        setCommenterName('');
+        setCommentText('');
+        fetchReportData(); // Refresh to show new comment
+      } else {
+        throw new Error('Failed to add comment');
+      }
+    } catch (error: any) {
+      console.error('Error submitting comment:', error);
+      toast({
+        variant: "destructive",
+        title: "Comment failed",
+        description: error.message || "Failed to add comment",
+      });
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'push': return 'bg-red-100 text-red-800 border-red-200';
+      case 'pull': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'legs': return 'bg-green-100 text-green-800 border-green-200';
+      case 'abs': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'cardio': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'treadmill': return 'bg-orange-100 text-orange-800 border-orange-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!reportData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="text-center py-8">
+            <h2 className="text-xl font-semibold mb-2">Report Not Found</h2>
+            <p className="text-muted-foreground">This shared report may have been removed or the link is invalid.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const { report, workouts, progressPhotos, comments, stats, weekRange } = reportData;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-2">{report.title}</h1>
+            <p className="text-blue-100 mb-4">
+              {format(new Date(weekRange.start), 'MMMM d')} - {format(new Date(weekRange.end), 'MMMM d, yyyy')}
+            </p>
+            
+            {/* Gym and Coach Info */}
+            <div className="flex justify-center items-center gap-8 text-sm bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                <span>Fusion Fitness</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                <span>Coach: SunielKumar</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Total Workouts</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalWorkouts}</div>
+              <Calendar className="h-4 w-4 mt-2 opacity-70" />
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Total Exercises</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalExercises}</div>
+              <Dumbbell className="h-4 w-4 mt-2 opacity-70" />
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Total Sets</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalSets}</div>
+              <BarChart3 className="h-4 w-4 mt-2 opacity-70" />
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.categoriesWorked.length}</div>
+              <div className="text-xs opacity-90 mt-1">{stats.categoriesWorked.join(', ')}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Progress Photos */}
+        {progressPhotos.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-green-600" />
+                Progress Photos
+              </CardTitle>
+              <CardDescription>Visual progress for this week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {progressPhotos.map((photo: any, index: number) => (
+                  <div key={photo.id} className="space-y-2">
+                    <img
+                      src={photo.photo_url}
+                      alt={`Progress photo ${index + 1}`}
+                      className="w-full h-48 object-cover rounded-lg border shadow-sm"
+                    />
+                    {photo.notes && (
+                      <p className="text-sm text-muted-foreground">{photo.notes}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(photo.created_at), 'MMM d, h:mm a')}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Workout Details */}
+        {workouts.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Workout Details</CardTitle>
+              <CardDescription>Complete breakdown of all exercises and sets</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {workouts.map((workout: any) => (
+                  <div key={workout.id} className="border rounded-lg p-4 bg-gradient-to-r from-gray-50 to-white">
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center gap-3">
+                        <Badge className={getCategoryColor(workout.category)}>
+                          {workout.category.toUpperCase()}
+                        </Badge>
+                        <span className="font-medium">
+                          {format(new Date(workout.date), 'EEEE, MMM d')}
+                        </span>
+                      </div>
+                      {workout.duration_minutes && (
+                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {workout.duration_minutes} min
+                        </span>
+                      )}
+                    </div>
+                    
+                    {workout.notes && (
+                      <div className="mb-4 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                        <p className="text-sm italic">"{workout.notes}"</p>
+                      </div>
+                    )}
+
+                    <div className="space-y-3">
+                      {workout.exercises?.map((exercise: any) => (
+                        <div key={exercise.id} className="bg-white rounded p-3 border">
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{exercise.exercise_name}</span>
+                                <Badge variant="outline" className="text-xs">
+                                  {exercise.exercise_type}
+                                </Badge>
+                                {exercise.is_progressive && (
+                                  <Badge className="bg-green-100 text-green-800 text-xs">
+                                    <TrendingUp className="h-3 w-3 mr-1" />
+                                    +{exercise.weight_improvement_kg}kg
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Display individual sets */}
+                          {exercise.exercise_sets && exercise.exercise_sets.length > 0 ? (
+                            <div className="mt-2">
+                              <div className="text-xs text-muted-foreground mb-2">Sets:</div>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                                {exercise.exercise_sets
+                                  .sort((a: any, b: any) => a.set_number - b.set_number)
+                                  .map((set: any) => (
+                                    <div 
+                                      key={set.id} 
+                                      className="bg-gray-50 rounded px-2 py-1 text-xs text-center"
+                                    >
+                                      <div className="font-medium">Set {set.set_number}</div>
+                                      <div className="text-muted-foreground">
+                                        {set.reps} reps
+                                        {set.weight_kg && ` × ${set.weight_kg}kg`}
+                                      </div>
+                                    </div>
+                                  ))
+                                }
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {[
+                                exercise.sets && `${exercise.sets} sets`,
+                                exercise.reps && `${exercise.reps} reps`,
+                                exercise.weight_kg && `${exercise.weight_kg}kg`,
+                                exercise.distance_km && `${exercise.distance_km}km`,
+                                exercise.time_minutes && `${exercise.time_minutes} min`,
+                                exercise.laps && `${exercise.laps} laps`
+                              ].filter(Boolean).join(' • ')}
+                            </div>
+                          )}
+                          
+                          {exercise.notes && (
+                            <p className="text-sm text-muted-foreground mt-2 italic">
+                              Notes: {exercise.notes}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Comments Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Comments & Feedback
+            </CardTitle>
+            <CardDescription>
+              Leave your comments, encouragement, or feedback below
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Existing Comments */}
+            {comments.length > 0 && (
+              <div className="space-y-4 mb-6">
+                {comments.map((comment: any) => (
+                  <div key={comment.id} className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-400">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="font-medium text-sm">{comment.commenter_name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(comment.created_at), 'MMM d, h:mm a')}
+                      </span>
+                    </div>
+                    <p className="text-sm">{comment.comment_text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Comment Form */}
+            <div className="space-y-4 pt-4 border-t">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Your Name</Label>
+                  <Input
+                    id="name"
+                    value={commenterName}
+                    onChange={(e) => setCommenterName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="comment">Your Comment</Label>
+                <Textarea
+                  id="comment"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Share your thoughts, encouragement, or feedback..."
+                  className="mt-1 min-h-[100px]"
+                />
+              </div>
+              
+              <Button 
+                onClick={submitComment}
+                disabled={isSubmittingComment || !commenterName.trim() || !commentText.trim()}
+                className="w-full md:w-auto"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {isSubmittingComment ? "Posting..." : "Post Comment"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default SharedReportPage;

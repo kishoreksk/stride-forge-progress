@@ -162,6 +162,71 @@ export type Database = {
         }
         Relationships: []
       }
+      report_comments: {
+        Row: {
+          comment_text: string
+          commenter_name: string
+          created_at: string
+          id: string
+          shared_report_id: string
+        }
+        Insert: {
+          comment_text: string
+          commenter_name: string
+          created_at?: string
+          id?: string
+          shared_report_id: string
+        }
+        Update: {
+          comment_text?: string
+          commenter_name?: string
+          created_at?: string
+          id?: string
+          shared_report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_comments_shared_report_id_fkey"
+            columns: ["shared_report_id"]
+            isOneToOne: false
+            referencedRelation: "shared_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_reports: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          share_token: string
+          title: string | null
+          updated_at: string
+          user_id: string
+          week_start_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          share_token: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          week_start_date: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          share_token?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          week_start_date?: string
+        }
+        Relationships: []
+      }
       workout_plans: {
         Row: {
           created_at: string

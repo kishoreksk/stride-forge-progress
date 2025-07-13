@@ -23,6 +23,7 @@ import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
 import { SetDetailsDialog } from '@/components/SetDetailsDialog';
 import { ProgressPhotoManager } from '@/components/ProgressPhotoManager';
 import { WeeklyPDFGenerator } from '@/components/WeeklyPDFGenerator';
+import { ShareWeeklyReport } from '@/components/ShareWeeklyReport';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO } from 'date-fns';
 
 interface ExerciseSet {
@@ -219,6 +220,9 @@ const WorkoutDashboard = () => {
                 onPhotoUpdate={fetchWeeklyWorkouts}
               />
               <WeeklyPDFGenerator 
+                weekStartDate={startOfWeek(currentWeek, { weekStartsOn: 1 })} 
+              />
+              <ShareWeeklyReport 
                 weekStartDate={startOfWeek(currentWeek, { weekStartsOn: 1 })} 
               />
             </div>
