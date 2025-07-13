@@ -55,14 +55,11 @@ const SharedReportPage = () => {
 
   const fetchReportData = async () => {
     try {
-      const response = await fetch(`https://eewlouxtzogkeisckwyb.supabase.co/functions/v1/shared-report?token=${token}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+      const { data, error } = await supabase.functions.invoke(`shared-report?token=${token}`, {
+        method: 'GET'
       });
 
-      const data = await response.json();
+      if (error) throw error;
 
       if (data.success) {
         setReportData(data);
@@ -94,19 +91,15 @@ const SharedReportPage = () => {
     setIsSubmittingComment(true);
 
     try {
-      const response = await fetch(`https://eewlouxtzogkeisckwyb.supabase.co/functions/v1/shared-report?action=comment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('shared-report?action=comment', {
+        body: {
           shareToken: token,
           commenterName: commenterName.trim(),
           commentText: commentText.trim()
-        })
+        }
       });
 
-      const data = await response.json();
+      if (error) throw error;
 
       if (data.success) {
         toast({
