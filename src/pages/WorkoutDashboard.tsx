@@ -21,6 +21,8 @@ import {
 import { UpdateExerciseDialog } from '@/components/UpdateExerciseDialog';
 import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
 import { SetDetailsDialog } from '@/components/SetDetailsDialog';
+import { ProgressPhotoManager } from '@/components/ProgressPhotoManager';
+import { WeeklyPDFGenerator } from '@/components/WeeklyPDFGenerator';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO } from 'date-fns';
 
 interface ExerciseSet {
@@ -208,9 +210,18 @@ const WorkoutDashboard = () => {
             Previous Week
           </Button>
           
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold">{getWeekRange()}</h2>
             <p className="text-muted-foreground">Weekly Workout Schedule</p>
+            <div className="flex justify-center gap-2">
+              <ProgressPhotoManager 
+                weekStartDate={startOfWeek(currentWeek, { weekStartsOn: 1 })} 
+                onPhotoUpdate={fetchWeeklyWorkouts}
+              />
+              <WeeklyPDFGenerator 
+                weekStartDate={startOfWeek(currentWeek, { weekStartsOn: 1 })} 
+              />
+            </div>
           </div>
           
           <Button 
