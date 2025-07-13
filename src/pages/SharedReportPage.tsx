@@ -127,27 +127,27 @@ const SharedReportPage = () => {
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'push': return 'bg-red-100 text-red-800 border-red-200';
-      case 'pull': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'legs': return 'bg-green-100 text-green-800 border-green-200';
-      case 'abs': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'cardio': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'treadmill': return 'bg-orange-100 text-orange-800 border-orange-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'push': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'pull': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'legs': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'abs': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'cardio': return 'bg-slate-100 text-slate-700 border-slate-200';
+      case 'treadmill': return 'bg-slate-100 text-slate-700 border-slate-200';
+      default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!reportData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="max-w-md mx-auto">
           <CardContent className="text-center py-8">
             <h2 className="text-xl font-semibold mb-2">Report Not Found</h2>
@@ -161,18 +161,18 @@ const SharedReportPage = () => {
   const { report, workouts, progressPhotos, comments, stats, weekRange } = reportData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="border-b bg-card">
+        <div className="max-w-6xl mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">{report.title}</h1>
-            <p className="text-blue-100 mb-4">
+            <h1 className="text-3xl font-bold mb-2 text-foreground">{report.title}</h1>
+            <p className="text-muted-foreground mb-4">
               {format(new Date(weekRange.start), 'MMMM d')} - {format(new Date(weekRange.end), 'MMMM d, yyyy')}
             </p>
             
             {/* Gym and Coach Info */}
-            <div className="flex justify-center items-center gap-8 text-sm bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+            <div className="flex justify-center items-center gap-8 text-sm bg-muted/50 rounded-lg p-4">
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 <span>Fusion Fitness</span>
@@ -186,46 +186,46 @@ const SharedReportPage = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Workouts</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Workouts</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalWorkouts}</div>
-              <Calendar className="h-4 w-4 mt-2 opacity-70" />
+              <Calendar className="h-4 w-4 mt-2 text-muted-foreground" />
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Exercises</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Exercises</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalExercises}</div>
-              <Dumbbell className="h-4 w-4 mt-2 opacity-70" />
+              <Dumbbell className="h-4 w-4 mt-2 text-muted-foreground" />
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Sets</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Sets</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalSets}</div>
-              <BarChart3 className="h-4 w-4 mt-2 opacity-70" />
+              <BarChart3 className="h-4 w-4 mt-2 text-muted-foreground" />
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Categories</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Categories</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.categoriesWorked.length}</div>
-              <div className="text-xs opacity-90 mt-1">{stats.categoriesWorked.join(', ')}</div>
+              <div className="text-xs text-muted-foreground mt-1">{stats.categoriesWorked.join(', ')}</div>
             </CardContent>
           </Card>
         </div>
@@ -235,20 +235,23 @@ const SharedReportPage = () => {
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
+                <TrendingUp className="h-5 w-5" />
                 Progress Photos
               </CardTitle>
               <CardDescription>Visual progress for this week</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {progressPhotos.map((photo: any, index: number) => (
-                  <div key={photo.id} className="space-y-2">
-                    <img
-                      src={photo.photo_url}
-                      alt={`Progress photo ${index + 1}`}
-                      className="w-full h-48 object-cover rounded-lg border shadow-sm"
-                    />
+                  <div key={photo.id} className="space-y-3">
+                    <div className="aspect-[4/3] overflow-hidden rounded-lg border">
+                      <img
+                        src={photo.photo_url}
+                        alt={`Progress photo ${index + 1}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 cursor-pointer"
+                        onClick={() => window.open(photo.photo_url, '_blank')}
+                      />
+                    </div>
                     {photo.notes && (
                       <p className="text-sm text-muted-foreground">{photo.notes}</p>
                     )}
@@ -272,7 +275,7 @@ const SharedReportPage = () => {
             <CardContent>
               <div className="space-y-6">
                 {workouts.map((workout: any) => (
-                  <div key={workout.id} className="border rounded-lg p-4 bg-gradient-to-r from-gray-50 to-white">
+                  <div key={workout.id} className="border rounded-lg p-4 bg-card">
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-3">
                         <Badge className={getCategoryColor(workout.category)}>
@@ -291,14 +294,14 @@ const SharedReportPage = () => {
                     </div>
                     
                     {workout.notes && (
-                      <div className="mb-4 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
+                      <div className="mb-4 p-3 bg-muted rounded border-l-4 border-primary">
                         <p className="text-sm italic">"{workout.notes}"</p>
                       </div>
                     )}
 
                     <div className="space-y-3">
                       {workout.exercises?.map((exercise: any) => (
-                        <div key={exercise.id} className="bg-white rounded p-3 border">
+                        <div key={exercise.id} className="bg-background rounded p-3 border">
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <div className="flex items-center gap-2">
@@ -326,7 +329,7 @@ const SharedReportPage = () => {
                                   .map((set: any) => (
                                     <div 
                                       key={set.id} 
-                                      className="bg-gray-50 rounded px-2 py-1 text-xs text-center"
+                                      className="bg-muted rounded px-2 py-1 text-xs text-center"
                                     >
                                       <div className="font-medium">Set {set.set_number}</div>
                                       <div className="text-muted-foreground">
@@ -382,7 +385,7 @@ const SharedReportPage = () => {
             {comments.length > 0 && (
               <div className="space-y-4 mb-6">
                 {comments.map((comment: any) => (
-                  <div key={comment.id} className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-400">
+                  <div key={comment.id} className="bg-muted rounded-lg p-4 border-l-4 border-primary">
                     <div className="flex justify-between items-start mb-2">
                       <span className="font-medium text-sm">{comment.commenter_name}</span>
                       <span className="text-xs text-muted-foreground">
