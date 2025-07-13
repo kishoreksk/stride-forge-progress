@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, Copy, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,6 +34,10 @@ export const SetDetailsDialog = ({
   const [sets, setSets] = useState<Set[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [quickAddSets, setQuickAddSets] = useState('');
+  const [quickAddReps, setQuickAddReps] = useState('');
+  const [quickAddWeight, setQuickAddWeight] = useState('');
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -77,11 +80,45 @@ export const SetDetailsDialog = ({
 
   const addSet = () => {
     const newSetNumber = sets.length > 0 ? Math.max(...sets.map(s => s.set_number)) + 1 : 1;
+    const lastSet = sets[sets.length - 1];
     setSets([...sets, { 
       set_number: newSetNumber, 
-      reps: 0, 
-      weight_kg: exerciseType === 'strength' ? 0 : undefined 
+      reps: lastSet?.reps || 0, 
+      weight_kg: exerciseType === 'strength' ? (lastSet?.weight_kg || 0) : undefined 
     }]);
+    
+    // Focus the new set's reps input
+    setTimeout(() => {
+      const newIndex = sets.length;
+      inputRefs.current[newIndex * 2]?.focus();
+    }, 100);
+  };
+
+  const addMultipleSets = () => {
+    const numSets = parseInt(quickAddSets) || 1;
+    const reps = parseInt(quickAddReps) || 0;
+    const weight = exerciseType === 'strength' ? (parseFloat(quickAddWeight) || 0) : undefined;
+    
+    const newSets = Array.from({ length: numSets }, (_, i) => ({
+      set_number: sets.length + i + 1,
+      reps,
+      weight_kg: weight
+    }));
+    
+    setSets([...sets, ...newSets]);
+    setQuickAddSets('');
+    setQuickAddReps('');
+    setQuickAddWeight('');
+  };
+
+  const copyPreviousSet = (index: number) => {
+    if (index > 0) {
+      const previousSet = sets[index - 1];
+      updateSet(index, 'reps', previousSet.reps);
+      if (exerciseType === 'strength') {
+        updateSet(index, 'weight_kg', previousSet.weight_kg);
+      }
+    }
   };
 
   const removeSet = (index: number) => {
@@ -92,6 +129,29 @@ export const SetDetailsDialog = ({
     const updated = [...sets];
     updated[index] = { ...updated[index], [field]: value };
     setSets(updated);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, index: number, field: keyof Set) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (field === 'reps') {
+        // Move to weight input or next set's reps
+        const nextInputIndex = exerciseType === 'strength' ? index * 2 + 1 : (index + 1) * 2;
+        if (inputRefs.current[nextInputIndex]) {
+          inputRefs.current[nextInputIndex]?.focus();
+        } else {
+          addSet();
+        }
+      } else if (field === 'weight_kg') {
+        // Move to next set's reps or add new set
+        const nextInputIndex = (index + 1) * 2;
+        if (inputRefs.current[nextInputIndex]) {
+          inputRefs.current[nextInputIndex]?.focus();
+        } else {
+          addSet();
+        }
+      }
+    }
   };
 
   const saveSets = async () => {
@@ -156,57 +216,132 @@ export const SetDetailsDialog = ({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Sets</h3>
-              <Button onClick={addSet} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Set
-              </Button>
+            {/* Quick Add Section */}
+            <div className="bg-muted/30 p-4 rounded-lg border">
+              <h4 className="font-medium mb-3">Quick Add Multiple Sets</h4>
+              <div className="grid gap-3 grid-cols-4">
+                <div>
+                  <Label className="text-xs">Sets</Label>
+                  <Input
+                    type="number"
+                    placeholder="3"
+                    value={quickAddSets}
+                    onChange={(e) => setQuickAddSets(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Reps</Label>
+                  <Input
+                    type="number"
+                    placeholder="10"
+                    value={quickAddReps}
+                    onChange={(e) => setQuickAddReps(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
+                {exerciseType === 'strength' && (
+                  <div>
+                    <Label className="text-xs">Weight (kg)</Label>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      placeholder="20"
+                      value={quickAddWeight}
+                      onChange={(e) => setQuickAddWeight(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                )}
+                <div className="flex items-end">
+                  <Button onClick={addMultipleSets} size="sm" className="h-8 w-full">
+                    Add All
+                  </Button>
+                </div>
+              </div>
             </div>
 
-            {sets.map((set, index) => (
-              <Card key={index}>
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="text-base">Set {index + 1}</CardTitle>
-                    {sets.length > 1 && (
-                      <Button
-                        onClick={() => removeSet(index)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+            {/* Sets Table */}
+            <div>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-semibold">Sets</h3>
+                <Button onClick={addSet} variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Set
+                </Button>
+              </div>
+
+              {sets.length > 0 && (
+                <div className="space-y-2">
+                  {/* Header */}
+                  <div className={`grid gap-2 items-center p-2 text-sm font-medium text-muted-foreground ${
+                    exerciseType === 'strength' ? 'grid-cols-[40px_1fr_1fr_auto]' : 'grid-cols-[40px_1fr_auto]'
+                  }`}>
+                    <div>Set</div>
+                    <div>Reps</div>
+                    {exerciseType === 'strength' && <div>Weight (kg)</div>}
+                    <div className="w-20">Actions</div>
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className={`grid gap-4 ${exerciseType === 'strength' ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                    <div>
-                      <Label>Reps</Label>
+
+                  {/* Sets */}
+                  {sets.map((set, index) => (
+                    <div
+                      key={index}
+                      className={`grid gap-2 items-center p-2 border rounded-md hover:bg-muted/20 ${
+                        exerciseType === 'strength' ? 'grid-cols-[40px_1fr_1fr_auto]' : 'grid-cols-[40px_1fr_auto]'
+                      }`}
+                    >
+                      <div className="text-sm font-medium text-center">{index + 1}</div>
                       <Input
+                        ref={(el) => inputRefs.current[index * 2] = el}
                         type="number"
-                        placeholder="12"
+                        placeholder="10"
                         value={set.reps || ''}
                         onChange={(e) => updateSet(index, 'reps', e.target.value ? parseInt(e.target.value) : 0)}
+                        onKeyDown={(e) => handleKeyDown(e, index, 'reps')}
+                        className="h-8"
                       />
-                    </div>
-                    {exerciseType === 'strength' && (
-                      <div>
-                        <Label>Weight (kg)</Label>
+                      {exerciseType === 'strength' && (
                         <Input
+                          ref={(el) => inputRefs.current[index * 2 + 1] = el}
                           type="number"
                           step="0.5"
                           placeholder="20"
                           value={set.weight_kg || ''}
                           onChange={(e) => updateSet(index, 'weight_kg', e.target.value ? parseFloat(e.target.value) : 0)}
+                          onKeyDown={(e) => handleKeyDown(e, index, 'weight_kg')}
+                          className="h-8"
                         />
+                      )}
+                      <div className="flex gap-1">
+                        {index > 0 && (
+                          <Button
+                            onClick={() => copyPreviousSet(index)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            title="Copy previous set"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        )}
+                        {sets.length > 1 && (
+                          <Button
+                            onClick={() => removeSet(index)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            title="Remove set"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {sets.length === 0 && (
               <div className="text-center py-8 border-2 border-dashed border-muted rounded-lg">
