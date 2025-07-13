@@ -109,7 +109,7 @@ const SharedReportPage = () => {
         
         setCommenterName('');
         setCommentText('');
-        fetchReportData(); // Refresh to show new comment
+        // Don't refresh to show comments - comments are private
       } else {
         throw new Error('Failed to add comment');
       }
