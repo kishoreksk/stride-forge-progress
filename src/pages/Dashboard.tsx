@@ -11,6 +11,7 @@ import { UploadPlanDialog } from '@/components/UploadPlanDialog';
 import { CreateWorkoutDialog } from '@/components/CreateWorkoutDialog';
 import { ProgressPhotoDialog } from '@/components/ProgressPhotoDialog';
 import { WeeklyReportDialog } from '@/components/WeeklyReportDialog';
+import { UploadSpecificPhotos } from '@/components/UploadSpecificPhotos';
 import { 
   Dumbbell, 
   LogOut, 
@@ -285,6 +286,11 @@ const Dashboard = () => {
               <span>Workout Calendar</span>
             </Link>
           </Button>
+        </div>
+
+        {/* Upload July 6 Photos */}
+        <div className="mb-8">
+          <UploadSpecificPhotos />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
