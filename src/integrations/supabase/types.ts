@@ -303,7 +303,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      duplicate_workout_schedule: {
+        Args: {
+          p_user_id: string
+          p_source_week_start: string
+          p_target_weeks?: number
+        }
+        Returns: Json
+      }
     }
     Enums: {
       exercise_type: "strength" | "cardio"

@@ -25,6 +25,9 @@ import { ProgressPhotoManager } from '@/components/ProgressPhotoManager';
 import { WeeklyPDFGenerator } from '@/components/WeeklyPDFGenerator';
 import { ShareWeeklyReport } from '@/components/ShareWeeklyReport';
 import { ViewReportComments } from '@/components/ViewReportComments';
+import { CopyWorkoutSchedule } from '@/components/CopyWorkoutSchedule';
+import { DeleteExerciseDialog } from '@/components/DeleteExerciseDialog';
+import { AddWorkoutDialog } from '@/components/AddWorkoutDialog';
 import { format, startOfWeek, addDays, addWeeks, subWeeks, isSameDay, parseISO } from 'date-fns';
 
 interface ExerciseSet {
@@ -212,10 +215,20 @@ const WorkoutDashboard = () => {
             Previous Week
           </Button>
           
-          <div className="text-center space-y-2">
+            <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold">{getWeekRange()}</h2>
             <p className="text-muted-foreground">Weekly Workout Schedule</p>
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2 flex-wrap">
+              <AddWorkoutDialog onWorkoutAdded={fetchWeeklyWorkouts}>
+                <Button variant="outline" size="sm">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Add Workout
+                </Button>
+              </AddWorkoutDialog>
+              <CopyWorkoutSchedule 
+                weekStartDate={startOfWeek(currentWeek, { weekStartsOn: 1 })} 
+                onScheduleCopied={fetchWeeklyWorkouts}
+              />
               <ProgressPhotoManager 
                 weekStartDate={startOfWeek(currentWeek, { weekStartsOn: 1 })} 
                 onPhotoUpdate={fetchWeeklyWorkouts}
@@ -389,23 +402,28 @@ const WorkoutDashboard = () => {
                                          )}
                                        </div>
                                      )}
-                                  </div>
-                                   <div className="flex space-x-1">
-                                     <SetDetailsDialog
-                                       exerciseId={exercise.id}
-                                       exerciseName={exercise.exercise_name}
-                                       exerciseType={exercise.exercise_type}
-                                       onSetsUpdated={fetchWeeklyWorkouts}
-                                     >
-                                       <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
-                                         <Settings className="h-3 w-3" />
-                                       </Button>
-                                     </SetDetailsDialog>
-                                     <UpdateExerciseDialog 
-                                       exercise={exercise} 
-                                       onExerciseUpdated={fetchWeeklyWorkouts} 
-                                     />
                                    </div>
+                                    <div className="flex space-x-1">
+                                      <SetDetailsDialog
+                                        exerciseId={exercise.id}
+                                        exerciseName={exercise.exercise_name}
+                                        exerciseType={exercise.exercise_type}
+                                        onSetsUpdated={fetchWeeklyWorkouts}
+                                      >
+                                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+                                          <Settings className="h-3 w-3" />
+                                        </Button>
+                                      </SetDetailsDialog>
+                                      <UpdateExerciseDialog 
+                                        exercise={exercise} 
+                                        onExerciseUpdated={fetchWeeklyWorkouts} 
+                                      />
+                                      <DeleteExerciseDialog
+                                        exerciseId={exercise.id}
+                                        exerciseName={exercise.exercise_name}
+                                        onExerciseDeleted={fetchWeeklyWorkouts}
+                                      />
+                                    </div>
                                 </div>
                               </div>
                             ))}
