@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Dumbbell, Clock, TrendingUp } from 'lucide-react';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format } from 'date-fns';
+import { UpdateExerciseDialog } from '@/components/UpdateExerciseDialog';
 
 interface ExerciseSet {
   id: string;
@@ -149,12 +150,18 @@ export const TodaysWorkout = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-base">{exercise.exercise_name}</CardTitle>
-                      {exercise.is_progressive && exercise.exercise_type === 'strength' && (
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                          +{exercise.weight_improvement_kg}kg
-                        </Badge>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {exercise.is_progressive && exercise.exercise_type === 'strength' && (
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            +{exercise.weight_improvement_kg}kg
+                          </Badge>
+                        )}
+                        <UpdateExerciseDialog 
+                          exercise={exercise} 
+                          onExerciseUpdated={fetchTodaysWorkout}
+                        />
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
