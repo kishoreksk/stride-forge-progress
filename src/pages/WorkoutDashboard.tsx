@@ -18,6 +18,12 @@ import {
   Target,
   Settings
 } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { UpdateExerciseDialog } from '@/components/UpdateExerciseDialog';
 import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
 import { SetDetailsDialog } from '@/components/SetDetailsDialog';
@@ -215,7 +221,7 @@ const WorkoutDashboard = () => {
             Previous Week
           </Button>
           
-            <div className="text-center space-y-2">
+          <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold">{getWeekRange()}</h2>
             <p className="text-muted-foreground">Weekly Workout Schedule</p>
             <div className="flex justify-center gap-2 flex-wrap">
@@ -298,150 +304,168 @@ const WorkoutDashboard = () => {
           </Card>
         </div>
 
-        {/* Weekly Calendar */}
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-          {weekDays.map((day) => {
-            const dayWorkouts = getWorkoutForDay(day);
-            const isToday = isSameDay(day, new Date());
-            
-            return (
-              <Card key={day.toString()} className={`${isToday ? 'ring-2 ring-primary' : ''}`}>
-                <CardHeader className="pb-3">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {getDayName(day)}
-                    </p>
-                    <p className={`text-2xl font-bold ${isToday ? 'text-primary' : ''}`}>
-                      {getDayNumber(day)}
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {dayWorkouts.length === 0 ? (
-                    <div className="text-center py-4 space-y-2">
-                      <p className="text-sm text-muted-foreground">Rest Day</p>
-                      <MarkAbsentDialog date={day} dayName={getDayName(day)} />
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {dayWorkouts.map((workout) => (
-                        <div key={workout.id} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Badge className={getCategoryColor(workout.category)}>
-                              {workout.category.toUpperCase()}
-                            </Badge>
-                            {workout.duration_minutes && (
-                              <span className="text-xs text-muted-foreground flex items-center">
-                                <Clock className="h-3 w-3 mr-1" />
-                                {workout.duration_minutes}m
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-1">
-                            {workout.exercises.map((exercise, index) => (
-                              <div 
-                                key={exercise.id} 
-                                className="text-xs p-2 bg-muted rounded border space-y-2"
-                              >
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <div className="flex items-center space-x-2">
-                                      <div className="font-medium text-foreground">
-                                        {exercise.exercise_name}
-                                      </div>
-                                      {exercise.is_progressive && exercise.exercise_type === 'strength' && (
-                                        <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-1 py-0">
-                                          <TrendingUp className="h-3 w-3 mr-1" />
-                                          +{exercise.weight_improvement_kg}kg
-                                        </Badge>
-                                      )}
-                                    </div>
-                                     {/* Display individual sets */}
-                                     {exercise.exercise_sets && exercise.exercise_sets.length > 0 ? (
-                                       <div className="space-y-1 mt-2">
-                                         <div className="text-muted-foreground text-xs">Sets:</div>
-                                         <div className="grid grid-cols-2 gap-1">
-                                           {exercise.exercise_sets
-                                             .sort((a, b) => a.set_number - b.set_number)
-                                             .map((set) => (
-                                               <div 
-                                                 key={set.id} 
-                                                 className="flex items-center justify-between bg-background/50 rounded px-2 py-1 text-xs"
-                                               >
-                                                 <span className="text-muted-foreground">Set {set.set_number}:</span>
-                                                 <span className="font-medium">
-                                                   {set.reps} reps
-                                                   {set.weight_kg && ` × ${set.weight_kg}kg`}
-                                                 </span>
-                                               </div>
-                                             ))
-                                           }
-                                         </div>
-                                         {exercise.previous_weight_kg && !exercise.is_progressive && (
-                                           <div className="text-orange-600 text-xs">
-                                             Previous: {exercise.previous_weight_kg}kg
-                                           </div>
-                                         )}
-                                       </div>
-                                     ) : (
-                                       <div className="text-muted-foreground flex items-center space-x-2 mt-1">
-                                         {exercise.sets && (
-                                           <span>{exercise.sets} sets</span>
-                                         )}
-                                         {exercise.reps && (
-                                           <span>• {exercise.reps} reps</span>
-                                         )}
-                                         {exercise.weight_kg && (
-                                           <span>• {exercise.weight_kg}kg</span>
-                                         )}
-                                         {exercise.previous_weight_kg && !exercise.is_progressive && (
-                                           <span className="text-orange-600">
-                                             • (prev: {exercise.previous_weight_kg}kg)
-                                           </span>
-                                         )}
-                                       </div>
-                                     )}
-                                   </div>
-                                    <div className="flex space-x-1">
-                                      <SetDetailsDialog
-                                        exerciseId={exercise.id}
-                                        exerciseName={exercise.exercise_name}
-                                        exerciseType={exercise.exercise_type}
-                                        onSetsUpdated={fetchWeeklyWorkouts}
-                                      >
-                                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
-                                          <Settings className="h-3 w-3" />
-                                        </Button>
-                                      </SetDetailsDialog>
-                                      <UpdateExerciseDialog 
-                                        exercise={exercise} 
-                                        onExerciseUpdated={fetchWeeklyWorkouts} 
-                                      />
-                                      <DeleteExerciseDialog
-                                        exerciseId={exercise.id}
-                                        exerciseName={exercise.exercise_name}
-                                        onExerciseDeleted={fetchWeeklyWorkouts}
-                                      />
-                                    </div>
-                                </div>
-                              </div>
+        {/* Weekly Calendar with Accordions */}
+        <div className="space-y-4">
+          <Accordion type="multiple" className="w-full">
+            {weekDays.map((day) => {
+              const dayWorkouts = getWorkoutForDay(day);
+              const isToday = isSameDay(day, new Date());
+              
+              return (
+                <AccordionItem key={day.toString()} value={day.toString()}>
+                  <AccordionTrigger className={`px-6 py-4 ${isToday ? 'bg-primary/5 border-primary/20' : ''}`}>
+                    <div className="flex items-center justify-between w-full mr-4">
+                      <div className="flex items-center space-x-4">
+                        <div className="text-center">
+                          <p className="text-sm font-medium text-muted-foreground">
+                            {getDayName(day)}
+                          </p>
+                          <p className={`text-2xl font-bold ${isToday ? 'text-primary' : ''}`}>
+                            {getDayNumber(day)}
+                          </p>
+                        </div>
+                        {dayWorkouts.length > 0 && (
+                          <div className="flex gap-2">
+                            {dayWorkouts.map((workout) => (
+                              <Badge key={workout.id} className={getCategoryColor(workout.category)}>
+                                {workout.category.toUpperCase()}
+                              </Badge>
                             ))}
                           </div>
-                          
-                          {workout.notes && (
-                            <div className="text-xs text-muted-foreground italic p-2 bg-muted/50 rounded">
-                              "{workout.notes}"
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                        )}
+                      </div>
+                      {dayWorkouts.length === 0 && (
+                        <span className="text-sm text-muted-foreground">Rest Day</span>
+                      )}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </AccordionTrigger>
+                  <AccordionContent className="px-6 pb-4">
+                    {dayWorkouts.length === 0 ? (
+                      <div className="text-center py-4 space-y-2">
+                        <p className="text-sm text-muted-foreground">Rest Day</p>
+                        <MarkAbsentDialog date={day} dayName={getDayName(day)} />
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {dayWorkouts.map((workout) => (
+                          <div key={workout.id} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <Badge className={getCategoryColor(workout.category)}>
+                                {workout.category.toUpperCase()}
+                              </Badge>
+                              {workout.duration_minutes && (
+                                <span className="text-xs text-muted-foreground flex items-center">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {workout.duration_minutes}m
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-1">
+                              {workout.exercises.map((exercise, index) => (
+                                <div 
+                                  key={exercise.id} 
+                                  className="text-xs p-2 bg-muted rounded border space-y-2"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <div className="flex items-center space-x-2">
+                                        <div className="font-medium text-foreground">
+                                          {exercise.exercise_name}
+                                        </div>
+                                        {exercise.is_progressive && exercise.exercise_type === 'strength' && (
+                                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs px-1 py-0">
+                                            <TrendingUp className="h-3 w-3 mr-1" />
+                                            +{exercise.weight_improvement_kg}kg
+                                          </Badge>
+                                        )}
+                                      </div>
+                                       {/* Display individual sets */}
+                                       {exercise.exercise_sets && exercise.exercise_sets.length > 0 ? (
+                                         <div className="space-y-1 mt-2">
+                                           <div className="text-muted-foreground text-xs">Sets:</div>
+                                           <div className="grid grid-cols-2 gap-1">
+                                             {exercise.exercise_sets
+                                               .sort((a, b) => a.set_number - b.set_number)
+                                               .map((set) => (
+                                                 <div 
+                                                   key={set.id} 
+                                                   className="flex items-center justify-between bg-background/50 rounded px-2 py-1 text-xs"
+                                                 >
+                                                   <span className="text-muted-foreground">Set {set.set_number}:</span>
+                                                   <span className="font-medium">
+                                                     {set.reps} reps
+                                                     {set.weight_kg && ` × ${set.weight_kg}kg`}
+                                                   </span>
+                                                 </div>
+                                               ))
+                                             }
+                                           </div>
+                                           {exercise.previous_weight_kg && !exercise.is_progressive && (
+                                             <div className="text-orange-600 text-xs">
+                                               Previous: {exercise.previous_weight_kg}kg
+                                             </div>
+                                           )}
+                                         </div>
+                                       ) : (
+                                         <div className="text-muted-foreground flex items-center space-x-2 mt-1">
+                                           {exercise.sets && (
+                                             <span>{exercise.sets} sets</span>
+                                           )}
+                                           {exercise.reps && (
+                                             <span>• {exercise.reps} reps</span>
+                                           )}
+                                           {exercise.weight_kg && (
+                                             <span>• {exercise.weight_kg}kg</span>
+                                           )}
+                                           {exercise.previous_weight_kg && !exercise.is_progressive && (
+                                             <span className="text-orange-600">
+                                               • (prev: {exercise.previous_weight_kg}kg)
+                                             </span>
+                                           )}
+                                         </div>
+                                       )}
+                                     </div>
+                                      <div className="flex space-x-1">
+                                        <SetDetailsDialog
+                                          exerciseId={exercise.id}
+                                          exerciseName={exercise.exercise_name}
+                                          exerciseType={exercise.exercise_type}
+                                          onSetsUpdated={fetchWeeklyWorkouts}
+                                        >
+                                          <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
+                                            <Settings className="h-3 w-3" />
+                                          </Button>
+                                        </SetDetailsDialog>
+                                        <UpdateExerciseDialog 
+                                          exercise={exercise} 
+                                          onExerciseUpdated={fetchWeeklyWorkouts} 
+                                        />
+                                        <DeleteExerciseDialog
+                                          exerciseId={exercise.id}
+                                          exerciseName={exercise.exercise_name}
+                                          onExerciseDeleted={fetchWeeklyWorkouts}
+                                        />
+                                      </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {workout.notes && (
+                              <div className="text-xs text-muted-foreground italic p-2 bg-muted/50 rounded">
+                                "{workout.notes}"
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              );
+            })}
+          </Accordion>
         </div>
       </div>
     </div>

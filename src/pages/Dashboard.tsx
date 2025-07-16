@@ -13,6 +13,7 @@ import { ProgressPhotoDialog } from '@/components/ProgressPhotoDialog';
 import { WeeklyReportDialog } from '@/components/WeeklyReportDialog';
 import { UploadSpecificPhotos } from '@/components/UploadSpecificPhotos';
 import { DeleteAllPhotos } from '@/components/DeleteAllPhotos';
+import { TodaysWorkout } from '@/components/TodaysWorkout';
 import { 
   Dumbbell, 
   LogOut, 
@@ -275,11 +276,10 @@ const Dashboard = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 mb-8">
+          <TodaysWorkout />
           <AddWorkoutDialog onWorkoutAdded={fetchData} />
           <CreateWorkoutDialog onWorkoutCreated={fetchData} />
-          {/* <UploadPlanDialog onPlanUploaded={fetchData} /> */}
-          {/* <ProgressPhotoDialog onPhotoUploaded={fetchData} /> */}
           <WeeklyReportDialog onReportGenerated={fetchData} />
           <Button variant="outline" className="h-20 flex flex-col items-center justify-center space-y-2" asChild>
             <Link to="/workout-calendar">
