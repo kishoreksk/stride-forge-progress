@@ -71,16 +71,16 @@ const WorkoutDashboard = () => {
   const [weeklyWorkouts, setWeeklyWorkouts] = useState<WorkoutSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Redirect if not authenticated
-  if (!user && !loading) {
-    return <Navigate to="/auth" replace />;
-  }
-
   useEffect(() => {
     if (user) {
       fetchWeeklyWorkouts();
     }
   }, [user, currentWeek]);
+
+  // Redirect if not authenticated (after all hooks are called)
+  if (!user && !loading) {
+    return <Navigate to="/auth" replace />;
+  }
 
   const fetchWeeklyWorkouts = async () => {
     setIsLoading(true);
