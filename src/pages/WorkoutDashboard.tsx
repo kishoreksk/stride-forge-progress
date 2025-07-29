@@ -24,7 +24,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { UpdateExerciseDialog } from '@/components/UpdateExerciseDialog';
+
 import { MarkAbsentDialog } from '@/components/MarkAbsentDialog';
 import { SetDetailsDialog } from '@/components/SetDetailsDialog';
 import { ProgressPhotoManager } from '@/components/ProgressPhotoManager';
@@ -441,10 +441,6 @@ const WorkoutDashboard = () => {
                                             <Settings className="h-3 w-3" />
                                           </Button>
                                         </SetDetailsDialog>
-                                        <UpdateExerciseDialog 
-                                          exercise={exercise} 
-                                          onExerciseUpdated={fetchWeeklyWorkouts} 
-                                        />
                                         <DeleteExerciseDialog
                                           exerciseId={exercise.id}
                                           exerciseName={exercise.exercise_name}
