@@ -343,7 +343,11 @@ const WorkoutDashboard = () => {
                     {dayWorkouts.length === 0 ? (
                       <div className="text-center py-4 space-y-2">
                         <p className="text-sm text-muted-foreground">Rest Day</p>
-                        <MarkAbsentDialog date={day} dayName={getDayName(day)} />
+                        <MarkAbsentDialog 
+                          date={day} 
+                          dayName={getDayName(day)} 
+                          onAbsentMarked={fetchWeeklyWorkouts}
+                        />
                       </div>
                     ) : (
                       <div className="space-y-3">

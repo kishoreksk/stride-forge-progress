@@ -21,7 +21,8 @@ import {
   TrendingUp, 
   BarChart3,
   Upload,
-  Trash2
+  Trash2,
+  Camera
 } from 'lucide-react';
 
 interface WorkoutSession {

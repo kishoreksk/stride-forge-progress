@@ -3,10 +3,15 @@ import { UserX, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 interface MarkAbsentDialogProps {
   date: Date;
   dayName: string;
+  onAbsentMarked?: () => void;
 }
 
 const motivationalQuotes = [
@@ -22,14 +27,44 @@ const motivationalQuotes = [
   "Your journey doesn't end here. Tomorrow is chapter two! 📖"
 ];
 
-export const MarkAbsentDialog = ({ date, dayName }: MarkAbsentDialogProps) => {
+export const MarkAbsentDialog = ({ date, dayName, onAbsentMarked }: MarkAbsentDialogProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [quote] = useState(() => motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
 
-  const handleMarkAbsent = () => {
-    // This is just a UI component for motivation
-    // The actual "absent" marking would be tracked by absence of workout data
-    setOpen(false);
+  const handleMarkAbsent = async () => {
+    if (!user) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from('absent_days')
+        .insert({
+          user_id: user.id,
+          date: format(date, 'yyyy-MM-dd'),
+          reason: 'Rest day'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Rest day marked",
+        description: `${dayName} has been marked as a rest day.`,
+      });
+
+      setOpen(false);
+      onAbsentMarked?.();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error marking rest day",
+        description: error.message,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -75,8 +110,12 @@ export const MarkAbsentDialog = ({ date, dayName }: MarkAbsentDialogProps) => {
           <Button type="button" variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleMarkAbsent} className="bg-gradient-to-r from-primary to-primary/80">
-            Mark as Rest Day
+          <Button 
+            onClick={handleMarkAbsent} 
+            disabled={isSubmitting}
+            className="bg-gradient-to-r from-primary to-primary/80"
+          >
+            {isSubmitting ? "Marking..." : "Mark as Rest Day"}
           </Button>
         </div>
       </DialogContent>
